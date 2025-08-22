@@ -1,7 +1,6 @@
 package embedding
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -10,38 +9,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockProvider is a mock implementation of the Provider interface for testing
-type MockProvider struct {
-	name string
-}
+// // MockProvider is a mock implementation of the Provider interface for testing
+// type MockProvider struct {
+// 	name string
+// }
 
-func (m *MockProvider) Type() ProviderType {
-	return ProviderTypeLocal
-}
+// func (m *MockProvider) Type() ProviderType {
+// 	return ProviderTypeLocal
+// }
 
-func (m *MockProvider) Name() string {
-	return m.name
-}
+// func (m *MockProvider) Name() string {
+// 	return m.name
+// }
 
-func (m *MockProvider) GenerateEmbeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error) {
-	return nil, nil
-}
+// func (m *MockProvider) GenerateEmbeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error) {
+// 	return nil, nil
+// }
 
-func (m *MockProvider) GetModels(ctx context.Context) ([]Model, error) {
-	return nil, nil
-}
+// func (m *MockProvider) GetModels(ctx context.Context) ([]Model, error) {
+// 	return nil, nil
+// }
 
-func (m *MockProvider) GetCapabilities() Capabilities {
-	return Capabilities{}
-}
+// func (m *MockProvider) GetCapabilities() Capabilities {
+// 	return Capabilities{}
+// }
 
-func (m *MockProvider) HealthCheck(ctx context.Context) error {
-	return nil
-}
+// func (m *MockProvider) HealthCheck(ctx context.Context) error {
+// 	return nil
+// }
 
-func (m *MockProvider) Close() error {
-	return nil
-}
+// func (m *MockProvider) Close() error {
+// 	return nil
+// }
 
 func TestNewModelManager(t *testing.T) {
 	tests := []struct {
@@ -391,8 +390,8 @@ func TestModelManager_GetModelStats(t *testing.T) {
 	require.NoError(t, err)
 
 	// Update usage count
-	manager.UpdateModelPerformance("stats-model-1", ModelPerformance{})
-	manager.UpdateModelPerformance("stats-model-2", ModelPerformance{})
+	_ = manager.UpdateModelPerformance("stats-model-1", ModelPerformance{})
+	_ = manager.UpdateModelPerformance("stats-model-2", ModelPerformance{})
 
 	// Get updated stats
 	stats = manager.GetModelStats()

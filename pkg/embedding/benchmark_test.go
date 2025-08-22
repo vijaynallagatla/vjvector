@@ -343,7 +343,10 @@ func BenchmarkServiceStats(b *testing.B) {
 		providerType: ProviderTypeOpenAI,
 		name:         "MockOpenAI",
 	}
-	service.RegisterProvider(mockProvider)
+
+	if err := service.RegisterProvider(mockProvider); err != nil {
+		b.Fatal("failed to register provider: %w", err)
+	}
 
 	b.Run("GetProviderStats", func(b *testing.B) {
 		b.ResetTimer()

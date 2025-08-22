@@ -44,7 +44,11 @@ func TestEmbeddingService_Integration(t *testing.T) {
 	// Create service
 	service, err := NewService(config)
 	require.NoError(t, err)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatal("failed to close service: %w", err)
+		}
+	}()
 
 	// Test service creation
 	assert.NotNil(t, service)
@@ -161,7 +165,11 @@ func TestEmbeddingService_Fallback(t *testing.T) {
 
 	service, err := NewService(config)
 	require.NoError(t, err)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatal("failed to close service: %w", err)
+		}
+	}()
 
 	// Create multiple providers
 	openAIProvider := &MockProvider{
@@ -210,7 +218,11 @@ func TestEmbeddingService_RateLimiting(t *testing.T) {
 
 	service, err := NewService(config)
 	require.NoError(t, err)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatal("failed to close service: %w", err)
+		}
+	}()
 
 	// Register provider
 	mockProvider := &MockProvider{
@@ -254,7 +266,11 @@ func TestEmbeddingService_Caching(t *testing.T) {
 
 	service, err := NewService(config)
 	require.NoError(t, err)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatal("failed to close service: %w", err)
+		}
+	}()
 
 	// Register provider
 	mockProvider := &MockProvider{
@@ -311,7 +327,11 @@ func TestEmbeddingService_Retry(t *testing.T) {
 
 	service, err := NewService(config)
 	require.NoError(t, err)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatal("failed to close service: %w", err)
+		}
+	}()
 
 	// Register provider
 	mockProvider := &MockProvider{
@@ -347,7 +367,11 @@ func TestEmbeddingService_Concurrency(t *testing.T) {
 
 	service, err := NewService(config)
 	require.NoError(t, err)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatal("failed to close service: %w", err)
+		}
+	}()
 
 	// Register provider
 	mockProvider := &MockProvider{
