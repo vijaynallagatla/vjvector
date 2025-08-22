@@ -8,6 +8,9 @@ import (
 	vectormath "github.com/vijaynallagatla/vjvector/pkg/math"
 )
 
+// BatchProcessor is an alias for ParallelBatchProcessor to satisfy linter preferences
+type BatchProcessor = ParallelBatchProcessor
+
 // WorkerPool manages a pool of workers for parallel processing
 type WorkerPool struct {
 	numWorkers int

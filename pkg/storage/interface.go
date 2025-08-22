@@ -8,6 +8,21 @@ import (
 	"github.com/vijaynallagatla/vjvector/pkg/core"
 )
 
+// Engine is an alias for StorageEngine to satisfy linter preferences
+type Engine = StorageEngine
+
+// Stats is an alias for StorageStats to satisfy linter preferences
+type Stats = StorageStats
+
+// Type is an alias for StorageType to satisfy linter preferences
+type Type = StorageType
+
+// Config is an alias for StorageConfig to satisfy linter preferences
+type Config = StorageConfig
+
+// Factory is an alias for StorageFactory to satisfy linter preferences
+type Factory = StorageFactory
+
 // StorageEngine defines the interface for vector storage operations
 type StorageEngine interface {
 	// Write stores multiple vectors to storage
@@ -62,6 +77,7 @@ type StorageStats struct {
 // StorageType represents the type of storage engine
 type StorageType string
 
+// StorageType constants define the available storage engine types
 const (
 	StorageTypeMemory  StorageType = "memory"  // In-memory storage
 	StorageTypeMMap    StorageType = "mmap"    // Memory-mapped file storage

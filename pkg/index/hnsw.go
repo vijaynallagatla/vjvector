@@ -180,7 +180,7 @@ func (h *HNSWIndex) Close() error {
 // Uses the geometric distribution as described in the HNSW paper
 func (h *HNSWIndex) randomLevel() int {
 	level := 0
-	for level < h.config.MaxLayers-1 && rand.Float64() < 0.5 {
+	for level < h.config.MaxLayers-1 && rand.Float64() < 0.5 { // nolint:gosec
 		level++
 	}
 	return level

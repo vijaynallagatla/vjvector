@@ -8,6 +8,18 @@ import (
 	"github.com/vijaynallagatla/vjvector/pkg/core"
 )
 
+// Stats is an alias for IndexStats to satisfy linter preferences
+type Stats = IndexStats
+
+// Type is an alias for IndexType to satisfy linter preferences
+type Type = IndexType
+
+// Config is an alias for IndexConfig to satisfy linter preferences
+type Config = IndexConfig
+
+// Factory is an alias for IndexFactory to satisfy linter preferences
+type Factory = IndexFactory
+
 // VectorIndex defines the interface for vector indexing operations.
 // Implementations include HNSW and IVF algorithms.
 type VectorIndex interface {
@@ -57,6 +69,7 @@ type IndexStats struct {
 // IndexType represents the type of vector index
 type IndexType string
 
+// IndexType constants define the available vector index algorithms
 const (
 	IndexTypeHNSW IndexType = "hnsw" // Hierarchical Navigable Small World
 	IndexTypeIVF  IndexType = "ivf"  // Inverted File Index

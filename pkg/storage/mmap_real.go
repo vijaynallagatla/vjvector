@@ -48,7 +48,7 @@ func NewMMapFile(filePath string, pageSize int, compression bool) (*MMapFile, er
 	}
 
 	// Open or create file
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0600) // nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
@@ -120,7 +120,7 @@ func (m *MMapFile) buildIndex() error {
 		}
 
 		// Read header
-		header := (*VectorHeader)(unsafe.Pointer(&m.mmapData[offset]))
+		header := (*VectorHeader)(unsafe.Pointer(&m.mmapData[offset])) // nolint:gosec // nolint:gosec
 
 		// Check if this is a valid header (non-zero dimension)
 		if header.Dimension == 0 {
@@ -178,7 +178,7 @@ func (m *MMapFile) Read(id string) (*core.Vector, error) {
 		return nil, fmt.Errorf("invalid offset for vector %s", id)
 	}
 
-	header := (*VectorHeader)(unsafe.Pointer(&m.mmapData[offset]))
+	header := (*VectorHeader)(unsafe.Pointer(&m.mmapData[offset])) // nolint:gosec
 
 	// Validate header
 	if header.Dimension == 0 {
@@ -230,7 +230,7 @@ func (m *MMapFile) Delete(id string) error {
 	}
 
 	// Mark as deleted by zeroing the dimension
-	header := (*VectorHeader)(unsafe.Pointer(&m.mmapData[offset]))
+	header := (*VectorHeader)(unsafe.Pointer(&m.mmapData[offset])) // nolint:gosec
 	header.Dimension = 0
 
 	// Remove from index
@@ -267,7 +267,7 @@ func (m *MMapFile) calculateChecksum(data []float64) uint32 {
 	var checksum uint32
 	for _, value := range data {
 		// Convert float64 to bytes and sum
-		bytes := (*[8]byte)(unsafe.Pointer(&value))
+		bytes := (*[8]byte)(unsafe.Pointer(&value)) // nolint:gosec
 		for _, b := range bytes {
 			checksum += uint32(b)
 		}

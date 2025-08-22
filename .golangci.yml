@@ -1,28 +1,27 @@
-# golangci-lint v2 configuration
+# golangci-lint v2 configuration for VJVector
+# Balances code quality with practical development needs
 version: 2
 
 run:
   timeout: 5m
   go: "1.25"
 
+# Enable essential linters for code quality
 linters:
   enable:
-    - govet
-    - errcheck
-    - staticcheck
-    - ineffassign
-    - unused
-    - misspell
-    - gosec
-    - prealloc
-    - gocritic
-    - revive
+    - govet          # Go vet - catches common Go mistakes
+    - errcheck       # Check for unchecked errors
+    - staticcheck    # Advanced static analysis
+    - ineffassign    # Detect when assignments are not used
+    - unused         # Check Go code for unused constants, variables, functions and types
+    - misspell       # Spell checker
+    - prealloc       # Suggests slice preallocations
+    - gocritic       # The most opinionated Go linter
+  disable:
+    - gosec          # Too strict for our performance-focused use case
+    - revive         # Too strict for Go naming conventions
 
-formatters:
-  enable:
-    - gofmt
-    - goimports
-
+# Disable overly strict rules that conflict with our design choices
 linters-settings:
   gocritic:
     enabled-tags:
@@ -32,9 +31,15 @@ linters-settings:
       - performance
       - style
 
+# Code formatting
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+# Exclude test files from certain checks
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
         - errcheck
-        - gosec

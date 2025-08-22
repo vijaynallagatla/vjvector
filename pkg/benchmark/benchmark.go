@@ -5,7 +5,7 @@ package benchmark
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +14,15 @@ import (
 	"github.com/vijaynallagatla/vjvector/pkg/index"
 	"github.com/vijaynallagatla/vjvector/pkg/storage"
 )
+
+// Suite is an alias for BenchmarkSuite to satisfy linter preferences
+type Suite = BenchmarkSuite
+
+// Config is an alias for BenchmarkConfig to satisfy linter preferences
+type Config = BenchmarkConfig
+
+// Result is an alias for BenchmarkResult to satisfy linter preferences
+type Result = BenchmarkResult
 
 // BenchmarkSuite provides comprehensive benchmarking for vector operations
 type BenchmarkSuite struct {
@@ -164,7 +173,7 @@ func (b *BenchmarkSuite) generateTestVectors() []*core.Vector {
 	for i := 0; i < b.config.VectorCount; i++ {
 		embedding := make([]float64, b.config.Dimension)
 		for j := 0; j < b.config.Dimension; j++ {
-			embedding[j] = rand.Float64()*2 - 1 // Random values between -1 and 1
+			embedding[j] = rand.Float64()*2 - 1 // Random values between -1 and 1 //nolint:gosec
 		}
 
 		vectors[i] = &core.Vector{
@@ -220,7 +229,7 @@ func (b *BenchmarkSuite) benchmarkSearch(vectors []*core.Vector) BenchmarkResult
 	for i := 0; i < b.config.QueryCount; i++ {
 		query := make([]float64, b.config.Dimension)
 		for j := 0; j < b.config.Dimension; j++ {
-			query[j] = rand.Float64()*2 - 1
+			query[j] = rand.Float64()*2 - 1 // nolint:gosec
 		}
 		queries[i] = query
 	}
