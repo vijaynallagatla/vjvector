@@ -31,7 +31,7 @@ func Init(level string) {
 
 	// Create logger
 	log = slog.New(handler)
-	
+
 	// Set as default logger
 	slog.SetDefault(log)
 }
