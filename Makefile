@@ -53,7 +53,11 @@ format:
 # Run tests with coverage
 coverage:
 	@echo "Running tests with coverage..."
-	go test -v -coverprofile=coverage.out -covermode=atomic ./...
+	@if [ "$(shell go env CGO_ENABLED)" = "1" ]; then \
+		go test -v -race -coverprofile=coverage.out -covermode=atomic ./...; \
+	else \
+		go test -v -coverprofile=coverage.out -covermode=atomic ./...; \
+	fi
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
@@ -122,7 +126,12 @@ bench:
 # Race condition detection
 race:
 	@echo "Running tests with race detection..."
-	go test -race ./...
+	@if [ "$(shell go env CGO_ENABLED)" = "1" ]; then \
+		go test -race ./...; \
+	else \
+		echo "CGO not enabled, skipping race detection"; \
+		go test ./...; \
+	fi
 
 # Generate documentation
 docs:
