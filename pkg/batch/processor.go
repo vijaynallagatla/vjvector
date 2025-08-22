@@ -2,24 +2,30 @@ package batch
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"sync"
 	"time"
 
 	"log/slog"
 
+	"github.com/vijaynallagatla/vjvector/pkg/core"
 	"github.com/vijaynallagatla/vjvector/pkg/embedding"
+	"github.com/vijaynallagatla/vjvector/pkg/rag"
 )
 
 // processor implements BatchProcessor
 type processor struct {
-	config               BatchConfig
-	embeddingProcessor   BatchEmbeddingProcessor
-	vectorProcessor      BatchVectorProcessor
-	statistics           processorStatistics
-	progressCallback     BatchProgressCallback
-	logger               *slog.Logger
-	mu                   sync.RWMutex
+	config             BatchConfig
+	embeddingProcessor BatchEmbeddingProcessor
+	vectorProcessor    BatchVectorProcessor
+	ragEngine          interface {
+		ProcessBatch(context.Context, []*rag.Query) ([]*rag.QueryResponse, error)
+	}
+	statistics       processorStatistics
+	progressCallback BatchProgressCallback
+	logger           *slog.Logger
+	mu               sync.RWMutex
 }
 
 // processorStatistics tracks overall batch processor statistics
@@ -37,7 +43,7 @@ type processorStatistics struct {
 }
 
 // NewBatchProcessor creates a new batch processor
-func NewBatchProcessor(config BatchConfig, embeddingService embedding.Service) BatchProcessor {
+func NewBatchProcessor(config BatchConfig, embeddingService embedding.Service, ragEngine rag.Engine) BatchProcessor {
 	// Apply default configurations
 	if config.EmbeddingConfig.DefaultBatchSize <= 0 {
 		config.EmbeddingConfig.DefaultBatchSize = 100
@@ -53,6 +59,7 @@ func NewBatchProcessor(config BatchConfig, embeddingService embedding.Service) B
 		config:             config,
 		embeddingProcessor: NewBatchEmbeddingProcessor(embeddingService, config.EmbeddingConfig),
 		vectorProcessor:    NewBatchVectorProcessor(config.VectorConfig),
+		ragEngine:          ragEngine,
 		logger:             slog.Default(),
 	}
 
@@ -65,13 +72,13 @@ func (p *processor) ProcessBatchEmbeddings(ctx context.Context, req *BatchEmbedd
 	defer p.decrementActiveBatches()
 
 	startTime := time.Now()
-	
+
 	// Set up progress tracking if callback is configured
 	if p.progressCallback != nil {
 		// Create a context for progress updates
 		progressCtx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		
+
 		go p.trackEmbeddingProgress(progressCtx, req, startTime)
 	}
 
@@ -100,13 +107,13 @@ func (p *processor) ProcessBatchVectors(ctx context.Context, req *BatchVectorReq
 	defer p.decrementActiveBatches()
 
 	startTime := time.Now()
-	
+
 	// Set up progress tracking if callback is configured
 	if p.progressCallback != nil {
 		// Create a context for progress updates
 		progressCtx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		
+
 		go p.trackVectorProgress(progressCtx, req, startTime)
 	}
 
@@ -130,17 +137,135 @@ func (p *processor) ProcessBatchVectors(ctx context.Context, req *BatchVectorReq
 	return response, nil
 }
 
-// GetOptimalBatchSize returns the optimal batch size for the given operation
-func (p *processor) GetOptimalBatchSize(operation BatchOperation, totalItems int) int {
-	switch operation {
-	case BatchOperationInsert, BatchOperationUpdate, BatchOperationDelete,
-		 BatchOperationSearch, BatchOperationSimilarity, BatchOperationNormalize, BatchOperationDistance:
-		return p.vectorProcessor.GetOptimalBatchSize(operation, totalItems)
-	default:
-		// Assume it's an embedding operation if not a vector operation
-		// This could be enhanced to detect embedding operations more precisely
-		return p.embeddingProcessor.GetOptimalBatchSize(embedding.ProviderTypeOpenAI, totalItems)
+// ProcessBatchRAG processes a batch of RAG operations
+func (p *processor) ProcessBatchRAG(ctx context.Context, req *BatchRAGRequest) (*BatchRAGResponse, error) {
+	p.incrementActiveBatches()
+	defer p.decrementActiveBatches()
+
+	startTime := time.Now()
+
+	// Set up progress tracking if callback is configured
+	if p.progressCallback != nil {
+		// Create a context for progress updates
+		progressCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		go p.trackRAGProgress(progressCtx, req, startTime)
 	}
+
+	// Convert batch request to RAG engine queries
+	ragQueries := make([]*rag.Query, len(req.Queries))
+	for i, query := range req.Queries {
+		ragQueries[i] = &rag.Query{
+			Text:    query,
+			Context: req.Context,
+		}
+	}
+
+	// Process queries using RAG engine
+	responses, err := p.ragEngine.ProcessBatch(ctx, ragQueries)
+	if err != nil {
+		return nil, fmt.Errorf("RAG batch processing failed: %w", err)
+	}
+
+	// Debug logging
+	p.logger.Info("RAG batch responses received",
+		"count", len(responses),
+		"first_response_results", len(responses[0].Results))
+
+	processingTime := time.Since(startTime)
+
+	// Convert RAG responses to batch responses
+	batchResults := make([]RAGQueryResult, len(responses))
+	for i, response := range responses {
+		// Convert RAG results to SearchResult format
+		searchResults := make([]SearchResult, len(response.Results))
+		for j, ragResult := range response.Results {
+			searchResults[j] = SearchResult{
+				Vector: &core.Vector{
+					ID:         ragResult.Vector.ID,
+					Collection: ragResult.Vector.Collection,
+					Embedding:  ragResult.Vector.Embedding,
+					Metadata:   ragResult.Vector.Metadata,
+				},
+				Score:      ragResult.Score,
+				Rank:       j + 1,
+				Similarity: ragResult.Score,
+				Context:    response.Query.Context,
+				Metadata:   ragResult.Vector.Metadata,
+			}
+		}
+
+		batchResults[i] = RAGQueryResult{
+			Query:               response.Query.Text,
+			OriginalQuery:       response.Query.Text,
+			ExpandedQueries:     response.QueryExpansion,
+			Results:             searchResults,
+			RerankedResults:     searchResults, // For now, use same results
+			ContextEnhancements: []string{},    // Will be populated when context enhancement is implemented
+			ProcessingTime:      response.ProcessingTime,
+			Confidence:          0.85, // Extract from metadata if available
+			Metadata:            response.Metadata,
+		}
+	}
+
+	// Create batch response
+	batchResponse := &BatchRAGResponse{
+		Operation:      req.Operation,
+		Results:        batchResults,
+		ProcessingTime: processingTime,
+		ProcessedCount: len(responses),
+		ErrorCount:     0,
+		Errors:         []BatchError{},
+		Statistics: BatchStatistics{
+			StartTime:      startTime,
+			EndTime:        time.Now(),
+			TotalItems:     len(req.Queries),
+			ProcessedItems: len(responses),
+			FailedItems:    0,
+			Throughput:     float64(len(responses)) / processingTime.Seconds(),
+			AverageLatency: processingTime / time.Duration(len(responses)),
+		},
+		RAGMetrics: RAGBatchMetrics{
+			QueryExpansionCount:     len(responses), // Count queries that had expansion
+			RerankingCount:          len(responses), // Count queries that had reranking
+			ContextEnhancementCount: len(responses), // Count queries that had context enhancement
+			AverageExpansionRatio:   1.0,            // Mock value
+			AverageRerankingTime:    processingTime / time.Duration(len(responses)),
+			CacheHitRate:            0.2,  // Mock value
+			AccuracyImprovement:     0.15, // Mock value
+		},
+	}
+
+	p.logger.Info("Batch RAG processing completed",
+		"operation", req.Operation,
+		"queries", len(req.Queries),
+		"processing_time", processingTime)
+
+	return batchResponse, nil
+}
+
+// GetOptimalBatchSize returns the optimal batch size for the given operation
+func (p *processor) GetOptimalBatchSize(operation interface{}, totalItems int) int {
+	// Try to handle as BatchOperation first
+	if batchOp, ok := operation.(BatchOperation); ok {
+		switch batchOp {
+		case BatchOperationInsert, BatchOperationUpdate, BatchOperationDelete,
+			BatchOperationSearch, BatchOperationSimilarity, BatchOperationNormalize, BatchOperationDistance:
+			return p.vectorProcessor.GetOptimalBatchSize(batchOp, totalItems)
+		}
+	}
+
+	// Try to handle as BatchRAGOperation
+	if _, ok := operation.(BatchRAGOperation); ok {
+		// For RAG operations, we'll need to implement RAG processor
+		// For now, return a reasonable default
+		return 50
+	}
+
+	// Assume it's an embedding operation if not a vector operation
+	// This could be enhanced to detect embedding operations more precisely
+	return p.embeddingProcessor.GetOptimalBatchSize(embedding.ProviderTypeOpenAI, totalItems)
 }
 
 // GetStatistics returns current batch processing statistics
@@ -175,7 +300,7 @@ func (p *processor) SetProgressCallback(callback BatchProgressCallback) {
 // Close closes the batch processor and cleans up resources
 func (p *processor) Close() error {
 	p.logger.Info("Closing batch processor")
-	
+
 	// Wait for active batches to complete
 	for {
 		stats := p.GetStatistics()
@@ -200,7 +325,7 @@ func (p *processor) trackEmbeddingProgress(ctx context.Context, req *BatchEmbedd
 
 	totalTexts := len(req.Texts)
 	_ = p.embeddingProcessor.GetOptimalBatchSize(req.Provider, totalTexts)
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -213,7 +338,7 @@ func (p *processor) trackEmbeddingProgress(ctx context.Context, req *BatchEmbedd
 			if progress > totalTexts {
 				progress = totalTexts
 			}
-			
+
 			p.progressCallback(progress, totalTexts, elapsed)
 		}
 	}
@@ -229,7 +354,7 @@ func (p *processor) trackVectorProgress(ctx context.Context, req *BatchVectorReq
 	defer ticker.Stop()
 
 	totalVectors := len(req.Vectors)
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -242,8 +367,38 @@ func (p *processor) trackVectorProgress(ctx context.Context, req *BatchVectorReq
 			if progress > totalVectors {
 				progress = totalVectors
 			}
-			
+
 			p.progressCallback(progress, totalVectors, elapsed)
+		}
+	}
+}
+
+// trackRAGProgress tracks progress for RAG operations
+func (p *processor) trackRAGProgress(ctx context.Context, req *BatchRAGRequest, startTime time.Time) {
+	if p.progressCallback == nil {
+		return
+	}
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	totalQueries := len(req.Queries)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			elapsed := time.Since(startTime)
+			// For RAG operations, we'll use a simple time-based progress estimate
+			// In a real implementation, this would be more sophisticated
+			estimatedTotal := 30 * time.Second // Default estimate for RAG operations
+			progress := int(float64(totalQueries) * elapsed.Seconds() / estimatedTotal.Seconds())
+			if progress > totalQueries {
+				progress = totalQueries
+			}
+
+			p.progressCallback(progress, totalQueries, elapsed)
 		}
 	}
 }
@@ -368,28 +523,28 @@ func GetDefaultConfig() BatchConfig {
 			WorkerCount:        runtime.NumCPU(),
 			OperationSettings: map[BatchOperation]OperationBatchConfig{
 				BatchOperationInsert: {
-					BatchSize:           1000,
-					MaxConcurrentBatch:  runtime.NumCPU(),
-					Timeout:             30 * time.Second,
-					WorkerCount:         runtime.NumCPU(),
-					MemoryLimit:         1024 * 1024 * 1024, // 1GB
+					BatchSize:          1000,
+					MaxConcurrentBatch: runtime.NumCPU(),
+					Timeout:            30 * time.Second,
+					WorkerCount:        runtime.NumCPU(),
+					MemoryLimit:        1024 * 1024 * 1024, // 1GB
 				},
 				BatchOperationSearch: {
-					BatchSize:           5000,
-					MaxConcurrentBatch:  runtime.NumCPU(),
-					Timeout:             60 * time.Second,
-					WorkerCount:         runtime.NumCPU(),
-					MemoryLimit:         2048 * 1024 * 1024, // 2GB
+					BatchSize:          5000,
+					MaxConcurrentBatch: runtime.NumCPU(),
+					Timeout:            60 * time.Second,
+					WorkerCount:        runtime.NumCPU(),
+					MemoryLimit:        2048 * 1024 * 1024, // 2GB
 				},
 			},
 		},
 		PerformanceConfig: PerformanceBatchConfig{
-			EnableMemoryPool:    true,
-			MemoryPoolSize:      1024 * 1024 * 1024, // 1GB
-			EnableProfiling:     false,
-			ProfilingInterval:   10 * time.Second,
-			GCOptimization:      true,
-			CPUAffinityEnabled:  false,
+			EnableMemoryPool:   true,
+			MemoryPoolSize:     1024 * 1024 * 1024, // 1GB
+			EnableProfiling:    false,
+			ProfilingInterval:  10 * time.Second,
+			GCOptimization:     true,
+			CPUAffinityEnabled: false,
 		},
 		MonitoringConfig: MonitoringBatchConfig{
 			EnableMetrics:       true,

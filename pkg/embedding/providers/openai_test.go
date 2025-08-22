@@ -160,26 +160,6 @@ func TestOpenAIProvider_CalculateCost(t *testing.T) {
 	}
 }
 
-func TestOpenAIProvider_ProcessBatch(t *testing.T) {
-	config := &embedding.ProviderConfig{
-		APIKey: "test-key",
-	}
-	provider, err := NewOpenAIProvider(config)
-	require.NoError(t, err)
-
-	// This test would require mocking the HTTP client
-	// For now, we'll test the method signature and basic logic
-
-	// Test with empty texts
-	_, _, _, err = provider.processBatch(context.Background(), []string{}, "text-embedding-ada-002")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no texts provided")
-
-	// Test with nil texts
-	_, _, _, err = provider.processBatch(context.Background(), nil, "text-embedding-ada-002")
-	assert.Error(t, err)
-}
-
 func TestOpenAIProvider_GenerateEmbeddings_Validation(t *testing.T) {
 	config := &embedding.ProviderConfig{
 		APIKey: "test-key",

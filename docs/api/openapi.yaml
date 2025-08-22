@@ -9,6 +9,8 @@ info:
     - **IVF Index**: Inverted File Index for clustering-based vector search
     - **Multiple Storage Engines**: Memory, Memory-mapped files, and LevelDB
     - **Performance Optimized**: SIMD acceleration, parallel processing, worker pools
+    - **RAG Operations**: Query expansion, vector search, result reranking, and context-aware retrieval
+    - **Batch Processing**: Efficient batch operations for embedding generation and vector processing
     
     ## Quick Start
     1. Create an index with your preferred algorithm
@@ -322,6 +324,138 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # RAG Operations
+  /v1/rag/query:
+    post:
+      summary: Process RAG Query
+      description: Process a single RAG query with query expansion, vector search, and result reranking
+      operationId: processRAGQuery
+      tags:
+        - RAG Operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RAGRequest'
+            example:
+              operation: "query_expansion"
+              query: "machine learning algorithms"
+              context:
+                domain: "AI"
+                user_id: "test_user"
+              rag_config:
+                enable_query_expansion: true
+                enable_result_reranking: false
+                enable_context_awareness: true
+      responses:
+        '200':
+          description: RAG query processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/rag/batch:
+    post:
+      summary: Process Batch RAG Queries
+      description: Process multiple RAG queries in batch for improved efficiency
+      operationId: processBatchRAG
+      tags:
+        - RAG Operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRAGRequest'
+            example:
+              operation: "end_to_end_rag"
+              queries: ["machine learning", "artificial intelligence", "deep learning"]
+              context:
+                domain: "AI"
+                user_id: "test_user"
+              batch_size: 3
+              max_concurrent: 2
+              timeout: "30s"
+              rag_config:
+                enable_query_expansion: true
+                enable_result_reranking: true
+                enable_context_awareness: true
+      responses:
+        '200':
+          description: Batch RAG processing completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchRAGResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/rag/capabilities:
+    get:
+      summary: Get RAG Capabilities
+      description: Get information about supported RAG operations and features
+      operationId: getRAGCapabilities
+      tags:
+        - RAG Operations
+      responses:
+        '200':
+          description: RAG capabilities retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGCapabilities'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/rag/statistics:
+    get:
+      summary: Get RAG Statistics
+      description: Get performance statistics and metrics for RAG operations
+      operationId: getRAGStatistics
+      tags:
+        - RAG Operations
+      responses:
+        '200':
+          description: RAG statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGCapabilities'
         '500':
           description: Internal server error
           content:
@@ -717,13 +851,14 @@ components:
     SearchResult:
       type: object
       required:
-        - vector_id
         - score
-        - distance
       properties:
         vector_id:
           type: string
           description: Identifier of the found vector
+        vector:
+          $ref: '#/components/schemas/Vector'
+          description: The found vector (for RAG operations)
         score:
           type: number
           format: float
@@ -732,6 +867,21 @@ components:
           type: number
           format: float
           description: Distance metric value (lower is better)
+        rank:
+          type: integer
+          description: Rank position (for RAG operations)
+        similarity:
+          type: number
+          format: float
+          description: Similarity value (for RAG operations)
+        context:
+          type: object
+          additionalProperties: true
+          description: Additional context (for RAG operations)
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Vector metadata (for RAG operations)
 
     # Storage Operations
     StorageStats:
@@ -817,6 +967,499 @@ components:
           enum: [false]
           description: Always false for errors
 
+    # RAG Operations
+    RAGOperation:
+      type: string
+      enum:
+        - query_expansion
+        - result_reranking
+        - context_retrieval
+        - end_to_end_rag
+        - batch_search
+        - batch_rerank
+      description: Type of RAG operation to perform
+
+    RAGRequest:
+      type: object
+      required:
+        - operation
+        - query
+      properties:
+        operation:
+          $ref: '#/components/schemas/RAGOperation'
+        query:
+          type: string
+          description: The text query to process
+        context:
+          type: object
+          additionalProperties: true
+          description: Additional context for the query
+        collection:
+          type: string
+          description: Collection to search in
+        options:
+          type: object
+          additionalProperties: true
+          description: Additional options for processing
+        rag_config:
+          $ref: '#/components/schemas/RAGConfig'
+
+    RAGResponse:
+      type: object
+      required:
+        - operation
+        - query
+        - results
+        - processing_time
+        - confidence
+      properties:
+        operation:
+          $ref: '#/components/schemas/RAGOperation'
+        query:
+          type: string
+          description: The processed query
+        original_query:
+          type: string
+          description: The original query before processing
+        expanded_queries:
+          type: array
+          items:
+            type: string
+          description: List of expanded queries
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+          description: Search results from vector similarity
+        reranked_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+          description: Results after reranking
+        context_enhancements:
+          type: array
+          items:
+            type: string
+          description: Context enhancements applied
+        processing_time:
+          type: integer
+          format: int64
+          description: Processing time in nanoseconds
+        confidence:
+          type: number
+          format: float
+          description: Confidence score of the results
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata
+
+    BatchRAGRequest:
+      type: object
+      required:
+        - operation
+        - queries
+      properties:
+        operation:
+          $ref: '#/components/schemas/RAGOperation'
+        queries:
+          type: array
+          items:
+            type: string
+          description: List of queries to process
+        context:
+          type: object
+          additionalProperties: true
+          description: Additional context for all queries
+        collection:
+          type: string
+          description: Collection to search in
+        batch_size:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Size of each batch
+        max_concurrent:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Maximum concurrent batches
+        timeout:
+          type: string
+          description: Timeout for the entire operation (e.g., "30s")
+        options:
+          type: object
+          additionalProperties: true
+          description: Additional options
+        rag_config:
+          $ref: '#/components/schemas/RAGConfig'
+
+    BatchRAGResponse:
+      type: object
+      required:
+        - operation
+        - results
+        - processing_time
+        - processed_count
+        - error_count
+        - statistics
+      properties:
+        operation:
+          $ref: '#/components/schemas/RAGOperation'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RAGResponse'
+          description: Results for each query
+        processing_time:
+          type: integer
+          format: int64
+          description: Total processing time in nanoseconds
+        processed_count:
+          type: integer
+          description: Number of successfully processed queries
+        error_count:
+          type: integer
+          description: Number of failed queries
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchError'
+          description: Details of any errors
+        statistics:
+          $ref: '#/components/schemas/BatchStatistics'
+        rag_metrics:
+          $ref: '#/components/schemas/RAGMetrics'
+
+    RAGConfig:
+      type: object
+      properties:
+        enable_query_expansion:
+          type: boolean
+          default: true
+          description: Enable query expansion
+        enable_result_reranking:
+          type: boolean
+          default: true
+          description: Enable result reranking
+        enable_context_awareness:
+          type: boolean
+          default: true
+          description: Enable context-aware retrieval
+        query_expansion_config:
+          $ref: '#/components/schemas/QueryExpansionConfig'
+        reranking_config:
+          $ref: '#/components/schemas/RerankingConfig'
+        context_config:
+          $ref: '#/components/schemas/ContextConfig'
+        search_config:
+          $ref: '#/components/schemas/SearchConfig'
+
+    QueryExpansionConfig:
+      type: object
+      properties:
+        strategies:
+          type: array
+          items:
+            type: string
+          description: Query expansion strategies to use
+        max_expansions:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Maximum number of query expansions
+        similarity_threshold:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Similarity threshold for expansions
+        domain_synonyms:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Domain-specific synonyms
+        custom_patterns:
+          type: array
+          items:
+            type: string
+          description: Custom expansion patterns
+
+    RerankingConfig:
+      type: object
+      properties:
+        strategies:
+          type: array
+          items:
+            type: string
+          description: Reranking strategies to use
+        weights:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+          description: Weights for different ranking factors
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Maximum number of results to return
+        semantic_weight:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Weight for semantic similarity
+        context_weight:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Weight for context relevance
+        hybrid_weight:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Weight for hybrid ranking
+
+    ContextConfig:
+      type: object
+      properties:
+        user_context:
+          type: boolean
+          default: false
+          description: Include user context
+        domain_context:
+          type: boolean
+          default: false
+          description: Include domain context
+        temporal_context:
+          type: boolean
+          default: false
+          description: Include temporal context
+        location_context:
+          type: boolean
+          default: false
+          description: Include location context
+        context_decay:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Context decay factor
+        confidence_threshold:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence threshold for context
+
+    SearchConfig:
+      type: object
+      properties:
+        search_type:
+          type: string
+          enum: [exact, approximate, hybrid]
+          default: "approximate"
+          description: Type of search to perform
+        index_type:
+          type: string
+          enum: [hnsw, ivf]
+          description: Index type to use for search
+        similarity_metric:
+          type: string
+          enum: [cosine, euclidean, dot]
+          default: "cosine"
+          description: Similarity metric for search
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 10
+          description: Maximum number of results
+        threshold:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Similarity threshold
+        enable_filters:
+          type: boolean
+          default: false
+          description: Enable result filtering
+        filters:
+          type: object
+          additionalProperties: true
+          description: Filter criteria
+
+    BatchError:
+      type: object
+      required:
+        - index
+        - message
+        - code
+      properties:
+        index:
+          type: integer
+          description: Index of the failed item
+        message:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+
+    BatchStatistics:
+      type: object
+      required:
+        - start_time
+        - end_time
+        - total_items
+        - processed_items
+        - failed_items
+        - throughput
+        - average_latency
+      properties:
+        start_time:
+          type: string
+          format: date-time
+          description: Start time of the batch operation
+        end_time:
+          type: string
+          format: date-time
+          description: End time of the batch operation
+        total_items:
+          type: integer
+          description: Total number of items to process
+        processed_items:
+          type: integer
+          description: Number of successfully processed items
+        failed_items:
+          type: integer
+          description: Number of failed items
+        throughput:
+          type: number
+          format: float
+          description: Items processed per second
+        average_latency:
+          type: integer
+          format: int64
+          description: Average processing time per item in nanoseconds
+        memory_usage:
+          type: integer
+          format: int64
+          description: Memory usage during processing
+        cpu_usage:
+          type: number
+          format: float
+          description: CPU usage percentage
+
+    RAGMetrics:
+      type: object
+      required:
+        - query_expansion_count
+        - reranking_count
+        - context_enhancement_count
+        - average_expansion_ratio
+        - average_reranking_time
+        - cache_hit_rate
+        - accuracy_improvement
+      properties:
+        query_expansion_count:
+          type: integer
+          description: Number of queries that underwent expansion
+        reranking_count:
+          type: integer
+          description: Number of results that were reranked
+        context_enhancement_count:
+          type: integer
+          description: Number of queries with context enhancement
+        average_expansion_ratio:
+          type: number
+          format: float
+          description: Average ratio of expanded queries to original
+        average_reranking_time:
+          type: integer
+          format: int64
+          description: Average time spent on reranking in nanoseconds
+        cache_hit_rate:
+          type: number
+          format: float
+          description: Cache hit rate percentage
+        accuracy_improvement:
+          type: number
+          format: float
+          description: Accuracy improvement from RAG processing
+
+    RAGCapabilities:
+      type: object
+      required:
+        - operations
+        - features
+        - supported_models
+      properties:
+        operations:
+          type: array
+          items:
+            type: string
+          description: Supported RAG operations
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Feature availability
+        supported_models:
+          type: array
+          items:
+            type: string
+          description: Supported AI models
+
+    RAGStatistics:
+      type: object
+      required:
+        - total_queries
+        - successful_queries
+        - failed_queries
+        - average_latency
+        - cache_hits
+        - cache_misses
+        - cache_hit_rate
+        - last_query_time
+        - uptime
+      properties:
+        total_queries:
+          type: integer
+          description: Total number of queries processed
+        successful_queries:
+          type: integer
+          description: Number of successful queries
+        failed_queries:
+          type: integer
+          description: Number of failed queries
+        average_latency:
+          type: string
+          description: Average query processing time
+        cache_hits:
+          type: integer
+          description: Number of cache hits
+        cache_misses:
+          type: integer
+          description: Number of cache misses
+        cache_hit_rate:
+          type: number
+          format: float
+          description: Cache hit rate percentage
+        last_query_time:
+          type: string
+          format: date-time
+          description: Time of last query
+        uptime:
+          type: string
+          description: Time since last query
+
 tags:
   - name: Health
     description: Health check and status endpoints
@@ -830,6 +1473,8 @@ tags:
     description: Storage engine operations and statistics
   - name: Monitoring
     description: Performance metrics and system monitoring
+  - name: RAG Operations
+    description: Retrieval-Augmented Generation operations including query expansion, vector search, and result reranking
 
 externalDocs:
   description: VJVector Documentation
