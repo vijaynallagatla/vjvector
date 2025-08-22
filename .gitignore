@@ -9,6 +9,7 @@ dist/
 
 # Keep tools directory for CI
 !tools/
+!tools/bin/
 
 # Test binary, built with `go test -c`
 *.test

@@ -4,19 +4,33 @@ This directory contains pre-built binaries and scripts for CI/CD and local devel
 
 ## Contents
 
-### golangci-lint
+### golangci-lint (macOS)
 - **Version**: 2.4.0
 - **Built with**: Go 1.25.0
 - **Source**: Built from [golangci-lint v2.4.0](https://github.com/golangci/golangci-lint/releases/tag/v2.4.0)
-- **Purpose**: Static code analysis and linting
+- **Purpose**: Static code analysis and linting for local development
+
+### golangci-lint (Linux - CI)
+- **Version**: 2.4.0
+- **Source**: Downloaded via official install script
+- **Purpose**: Static code analysis and linting for CI/CD environments
 
 ### run-lint.sh
-- **Purpose**: Shell script wrapper for golangci-lint
+- **Purpose**: Smart script wrapper for golangci-lint
 - **Usage**: `./tools/run-lint.sh [args]`
 - **Features**: 
-  - Automatically checks if binary exists and is executable
+  - Automatically detects CI environment
+  - Prefers Linux binary for CI, falls back to macOS binary for local development
   - Shows version information before running
   - Passes through all arguments to golangci-lint
+
+### install-lint-linux.sh
+- **Purpose**: Installs Linux-compatible golangci-lint for CI
+- **Usage**: `./tools/install-lint-linux.sh`
+- **Features**:
+  - Downloads official Linux binary via install script
+  - Sets correct permissions
+  - Verifies installation
 
 ## Why Pre-built Binaries?
 

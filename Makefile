@@ -44,6 +44,11 @@ lint:
 	@echo "Running linter..."
 	./tools/run-lint.sh run
 
+lint-ci:
+	@echo "Installing and running linter for CI..."
+	./tools/install-lint-linux.sh
+	./tools/bin/golangci-lint run
+
 # Format code
 format:
 	@echo "Formatting code..."
