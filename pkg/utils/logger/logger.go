@@ -1,33 +1,43 @@
 package logger
 
 import (
+	"log/slog"
 	"os"
-
-	"github.com/sirupsen/logrus"
 )
 
-var log *logrus.Logger
+var log *slog.Logger
 
 // Init initializes the logger with the specified level
 func Init(level string) {
-	log = logrus.New()
-	
 	// Parse log level
-	logLevel, err := logrus.ParseLevel(level)
-	if err != nil {
-		logLevel = logrus.InfoLevel
+	var logLevel slog.Level
+	switch level {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info":
+		logLevel = slog.LevelInfo
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
 	}
-	log.SetLevel(logLevel)
+
+	// Create handler with JSON formatting
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel,
+	})
+
+	// Create logger
+	log = slog.New(handler)
 	
-	// Set output to stdout
-	log.SetOutput(os.Stdout)
-	
-	// Set formatter
-	log.SetFormatter(&logrus.JSONFormatter{})
+	// Set as default logger
+	slog.SetDefault(log)
 }
 
 // Get returns the logger instance
-func Get() *logrus.Logger {
+func Get() *slog.Logger {
 	if log == nil {
 		Init("info")
 	}
@@ -35,36 +45,41 @@ func Get() *logrus.Logger {
 }
 
 // Debug logs a debug message
-func Debug(args ...interface{}) {
-	Get().Debug(args...)
+func Debug(msg string, args ...any) {
+	Get().Debug(msg, args...)
 }
 
 // Info logs an info message
-func Info(args ...interface{}) {
-	Get().Info(args...)
+func Info(msg string, args ...any) {
+	Get().Info(msg, args...)
 }
 
 // Warn logs a warning message
-func Warn(args ...interface{}) {
-	Get().Warn(args...)
+func Warn(msg string, args ...any) {
+	Get().Warn(msg, args...)
 }
 
 // Error logs an error message
-func Error(args ...interface{}) {
-	Get().Error(args...)
+func Error(msg string, args ...any) {
+	Get().Error(msg, args...)
 }
 
 // Fatal logs a fatal message and exits
-func Fatal(args ...interface{}) {
-	Get().Fatal(args...)
+func Fatal(msg string, args ...any) {
+	Get().Error(msg, args...)
+	os.Exit(1)
 }
 
 // WithField adds a field to the logger
-func WithField(key string, value interface{}) *logrus.Entry {
-	return Get().WithField(key, value)
+func WithField(key string, value any) *slog.Logger {
+	return Get().With(key, value)
 }
 
 // WithFields adds multiple fields to the logger
-func WithFields(fields logrus.Fields) *logrus.Entry {
-	return Get().WithFields(fields)
+func WithFields(fields map[string]any) *slog.Logger {
+	args := make([]any, 0, len(fields)*2)
+	for k, v := range fields {
+		args = append(args, k, v)
+	}
+	return Get().With(args...)
 }

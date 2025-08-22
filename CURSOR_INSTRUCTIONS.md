@@ -55,6 +55,7 @@ vjvector/
 - **Context**: Use `context.Context` for cancellation and timeouts
 - **Interfaces**: Define small, focused interfaces in the package that uses them
 - **Testing**: Write comprehensive tests with table-driven tests for edge cases
+- **Logging**: Use Go's standard library `slog` for structured logging
 
 ### 2. Code Organization
 - **Package Naming**: Use descriptive, single-word package names
