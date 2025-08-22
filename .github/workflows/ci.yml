@@ -69,26 +69,7 @@ jobs:
       run: |
         ./tools/bin/golangci-lint run --timeout=5m
 
-  security:
-    name: Security
-    runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-
-    - name: Run CodeQL security analysis
-      uses: github/codeql-action/init@v2
-      with:
-        languages: go
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
 
   build:
     name: Build

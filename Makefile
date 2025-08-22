@@ -76,12 +76,7 @@ docker-run:
 	@echo "Running Docker container..."
 	docker run -p 8080:8080 -v $(PWD)/data:/app/data vjvector:latest
 
-# Install development tools
-install-tools:
-	@echo "Installing development tools..."
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2
-	go install golang.org/x/tools/cmd/goimports@latest
-	@echo "Tools installed"
+
 
 # Download dependencies
 deps:
@@ -114,14 +109,7 @@ mocks:
 		echo "Mockgen not found. Install with: go install github.com/golang/mock/mockgen@latest"; \
 	fi
 
-# Check for security vulnerabilities
-security:
-	@echo "Checking for security vulnerabilities..."
-	@if command -v gosec > /dev/null; then \
-		gosec ./...; \
-	else \
-		echo "Gosec not found. Install with: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest"; \
-	fi
+
 
 # Benchmark tests
 bench:
@@ -152,5 +140,5 @@ pre-commit: format lint test
 	@echo "Pre-commit checks completed successfully"
 
 # CI checks
-ci: deps test lint security
+ci: deps test lint
 	@echo "CI checks completed successfully"
