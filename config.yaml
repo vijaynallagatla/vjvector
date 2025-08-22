@@ -1,0 +1,17 @@
+server:
+  host: "localhost"
+  port: 8080
+
+database:
+  data_dir: "./data"
+  max_vectors: 1000000
+  index_type: "hnsw"
+
+embedding:
+  model_name: "text-embedding-ada-002"
+  dimension: 1536
+  batch_size: 100
+
+logging:
+  level: "info"
+  format: "json"
