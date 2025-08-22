@@ -1,0 +1,842 @@
+openapi: 3.0.3
+info:
+  title: VJVector API
+  description: |
+    High-performance vector database API for AI embedding and RAG applications.
+    
+    ## Features
+    - **HNSW Index**: Hierarchical Navigable Small World for fast approximate nearest neighbor search
+    - **IVF Index**: Inverted File Index for clustering-based vector search
+    - **Multiple Storage Engines**: Memory, Memory-mapped files, and LevelDB
+    - **Performance Optimized**: SIMD acceleration, parallel processing, worker pools
+    
+    ## Quick Start
+    1. Create an index with your preferred algorithm
+    2. Insert vectors with embeddings
+    3. Search for similar vectors
+    4. Monitor performance and storage
+    
+    ## Authentication
+    Currently no authentication required. All endpoints are publicly accessible.
+  version: 1.0.0
+  contact:
+    name: VJVector Team
+    url: https://github.com/vijaynallagatla/vjvector
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.vjvector.com
+    description: Production server (example)
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Check if the VJVector API server is running and healthy
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2024-01-15T10:30:00Z"
+                service: "VJVector API"
+                version: "1.0.0"
+                uptime: "2h 15m 30s"
+
+  /openapi.yaml:
+    get:
+      summary: OpenAPI Specification
+      description: Get the OpenAPI specification for this API
+      operationId: getOpenAPI
+      tags:
+        - Documentation
+      responses:
+        '200':
+          description: OpenAPI specification
+          content:
+            text/yaml:
+              schema:
+                type: string
+
+  /docs:
+    get:
+      summary: API Documentation
+      description: Interactive API documentation using Swagger UI
+      operationId: getDocs
+      tags:
+        - Documentation
+      responses:
+        '200':
+          description: HTML documentation page
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /v1/indexes:
+    post:
+      summary: Create Index
+      description: Create a new vector index with specified configuration
+      operationId: createIndex
+      tags:
+        - Index Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIndexRequest'
+            example:
+              id: "my_hnsw_index"
+              type: "hnsw"
+              dimension: 256
+              max_elements: 1000000
+              m: 16
+              ef_construction: 200
+              ef_search: 100
+              max_layers: 16
+              distance_metric: "cosine"
+              normalize: true
+      responses:
+        '201':
+          description: Index created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateIndexResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    get:
+      summary: List Indexes
+      description: Get a list of all available vector indexes with their statistics
+      operationId: listIndexes
+      tags:
+        - Index Management
+      responses:
+        '200':
+          description: List of indexes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListIndexesResponse'
+              example:
+                indexes:
+                  - id: "my_hnsw_index"
+                    total_vectors: 1000
+                    memory_usage: 1048576
+                    index_size: 2097152
+                    avg_search_time: 0.5
+                    avg_insert_time: 0.1
+                count: 1
+
+  /v1/indexes/{indexId}:
+    parameters:
+      - name: indexId
+        in: path
+        required: true
+        description: Unique identifier for the index
+        schema:
+          type: string
+        example: "my_hnsw_index"
+    
+    get:
+      summary: Get Index
+      description: Get detailed information about a specific index
+      operationId: getIndex
+      tags:
+        - Index Management
+      responses:
+        '200':
+          description: Index information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexInfo'
+        '404':
+          description: Index not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      summary: Delete Index
+      description: Delete an index and free all associated resources
+      operationId: deleteIndex
+      tags:
+        - Index Management
+      responses:
+        '200':
+          description: Index deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteIndexResponse'
+        '404':
+          description: Index not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/indexes/{indexId}/vectors:
+    parameters:
+      - name: indexId
+        in: path
+        required: true
+        description: Unique identifier for the index
+        schema:
+          type: string
+        example: "my_hnsw_index"
+    
+    post:
+      summary: Insert Vectors
+      description: Insert one or more vectors into the specified index
+      operationId: insertVectors
+      tags:
+        - Vector Operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsertVectorsRequest'
+            example:
+              vectors:
+                - id: "doc_001"
+                  collection: "documents"
+                  embedding: [0.1, 0.2, 0.3, 0.4, 0.5]
+                  metadata:
+                    title: "Sample Document"
+                    author: "John Doe"
+                    category: "technology"
+                - id: "doc_002"
+                  collection: "documents"
+                  embedding: [0.2, 0.3, 0.4, 0.5, 0.6]
+                  metadata:
+                    title: "Another Document"
+                    author: "Jane Smith"
+                    category: "science"
+      responses:
+        '200':
+          description: Vectors inserted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsertVectorsResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Index not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/indexes/{indexId}/search:
+    parameters:
+      - name: indexId
+        in: path
+        required: true
+        description: Unique identifier for the index
+        schema:
+          type: string
+        example: "my_hnsw_index"
+    
+    post:
+      summary: Search Vectors
+      description: Search for similar vectors in the specified index
+      operationId: searchVectors
+      tags:
+        - Vector Operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+            example:
+              query: [0.1, 0.2, 0.3, 0.4, 0.5]
+              k: 10
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              example:
+                index_id: "my_hnsw_index"
+                query: [0.1, 0.2, 0.3, 0.4, 0.5]
+                k: 10
+                results:
+                  - vector_id: "doc_001"
+                    score: 0.95
+                    distance: 0.05
+                  - vector_id: "doc_002"
+                    score: 0.87
+                    distance: 0.13
+                search_time: "1.2ms"
+                count: 2
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Index not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/storage/stats:
+    get:
+      summary: Get Storage Statistics
+      description: Get comprehensive statistics about the storage engine
+      operationId: getStorageStats
+      tags:
+        - Storage
+      responses:
+        '200':
+          description: Storage statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageStats'
+              example:
+                total_vectors: 1000
+                storage_size: 10485760
+                memory_usage: 5242880
+                avg_write_time: 0.5
+                avg_read_time: 0.2
+                file_count: 5
+                page_size: 4096
+
+  /v1/storage/compact:
+    post:
+      summary: Compact Storage
+      description: Trigger storage compaction to optimize space usage
+      operationId: compactStorage
+      tags:
+        - Storage
+      responses:
+        '200':
+          description: Storage compaction completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompactResponse'
+        '500':
+          description: Compaction failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/metrics:
+    get:
+      summary: Get Performance Metrics
+      description: Get real-time performance metrics and system statistics
+      operationId: getMetrics
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+              example:
+                indexes_count: 2
+                uptime: "2h 15m 30s"
+                memory_usage: "N/A"
+                requests: "N/A"
+
+components:
+  schemas:
+    # Health Check
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - service
+        - version
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Current health status of the server
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server time
+        service:
+          type: string
+          description: Service name
+        version:
+          type: string
+          description: API version
+        uptime:
+          type: string
+          description: Server uptime since start
+
+    # Index Creation
+    CreateIndexRequest:
+      type: object
+      required:
+        - id
+        - type
+        - dimension
+        - max_elements
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the index
+          pattern: '^[a-zA-Z0-9_-]+$'
+        type:
+          type: string
+          enum: [hnsw, ivf]
+          description: Type of vector index algorithm
+        dimension:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Dimension of the vectors
+        max_elements:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+          description: Maximum number of vectors the index can hold
+        m:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: HNSW: Maximum connections per layer
+        ef_construction:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: HNSW: Search depth during construction
+        ef_search:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: HNSW: Search depth during queries
+        max_layers:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: HNSW: Maximum number of layers
+        num_clusters:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: IVF: Number of clusters
+        cluster_size:
+          type: integer
+          minimum: 1
+          maximum: 100000
+          description: IVF: Target cluster size
+        distance_metric:
+          type: string
+          enum: [cosine, euclidean, dot]
+          default: "cosine"
+          description: Distance metric for similarity calculation
+        normalize:
+          type: boolean
+          default: true
+          description: Whether to normalize vectors
+
+    CreateIndexResponse:
+      type: object
+      required:
+        - id
+        - type
+        - status
+        - message
+      properties:
+        id:
+          type: string
+          description: Index identifier
+        type:
+          type: string
+          description: Index type
+        status:
+          type: string
+          enum: [created]
+          description: Operation status
+        config:
+          $ref: '#/components/schemas/IndexConfig'
+        message:
+          type: string
+          description: Success message
+
+    # Index Configuration
+    IndexConfig:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [hnsw, ivf]
+        dimension:
+          type: integer
+        max_elements:
+          type: integer
+        m:
+          type: integer
+        ef_construction:
+          type: integer
+        ef_search:
+          type: integer
+        max_layers:
+          type: integer
+        num_clusters:
+          type: integer
+        cluster_size:
+          type: integer
+        distance_metric:
+          type: string
+        normalize:
+          type: boolean
+
+    # Index Listing
+    ListIndexesResponse:
+      type: object
+      required:
+        - indexes
+        - count
+      properties:
+        indexes:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndexInfo'
+        count:
+          type: integer
+          description: Total number of indexes
+
+    # Index Information
+    IndexInfo:
+      type: object
+      required:
+        - id
+        - total_vectors
+        - memory_usage
+        - index_size
+      properties:
+        id:
+          type: string
+          description: Index identifier
+        total_vectors:
+          type: integer
+          description: Number of vectors in the index
+        memory_usage:
+          type: integer
+          description: Memory usage in bytes
+        index_size:
+          type: integer
+          description: Index size in bytes
+        avg_search_time:
+          type: number
+          format: float
+          description: Average search time in milliseconds
+        avg_insert_time:
+          type: number
+          format: float
+          description: Average insert time in milliseconds
+
+    # Index Deletion
+    DeleteIndexResponse:
+      type: object
+      required:
+        - id
+        - status
+        - message
+      properties:
+        id:
+          type: string
+          description: Index identifier
+        status:
+          type: string
+          enum: [deleted]
+          description: Operation status
+        message:
+          type: string
+          description: Success message
+
+    # Vector Operations
+    InsertVectorsRequest:
+      type: object
+      required:
+        - vectors
+      properties:
+        vectors:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/Vector'
+
+    InsertVectorsResponse:
+      type: object
+      required:
+        - index_id
+        - vectors_added
+        - total_vectors
+        - insert_time
+        - message
+      properties:
+        index_id:
+          type: string
+          description: Index identifier
+        vectors_added:
+          type: integer
+          description: Number of vectors successfully inserted
+        total_vectors:
+          type: integer
+          description: Total vectors in the index after insertion
+        insert_time:
+          type: string
+          description: Time taken for insertion
+        message:
+          type: string
+          description: Success message
+
+    # Vector Schema
+    Vector:
+      type: object
+      required:
+        - id
+        - embedding
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the vector
+        collection:
+          type: string
+          description: Collection name for grouping vectors
+        embedding:
+          type: array
+          items:
+            type: number
+            format: float
+          description: Vector embedding values
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata for the vector
+
+    # Search Operations
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: array
+          items:
+            type: number
+            format: float
+          description: Query vector for similarity search
+        k:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 10
+          description: Number of results to return
+
+    SearchResponse:
+      type: object
+      required:
+        - index_id
+        - query
+        - k
+        - results
+        - search_time
+        - count
+      properties:
+        index_id:
+          type: string
+          description: Index identifier
+        query:
+          type: array
+          items:
+            type: number
+            format: float
+          description: Query vector used for search
+        k:
+          type: integer
+          description: Requested number of results
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        search_time:
+          type: string
+          description: Time taken for search
+        count:
+          type: integer
+          description: Number of results found
+
+    # Search Result
+    SearchResult:
+      type: object
+      required:
+        - vector_id
+        - score
+        - distance
+      properties:
+        vector_id:
+          type: string
+          description: Identifier of the found vector
+        score:
+          type: number
+          format: float
+          description: Similarity score (higher is better)
+        distance:
+          type: number
+          format: float
+          description: Distance metric value (lower is better)
+
+    # Storage Operations
+    StorageStats:
+      type: object
+      required:
+        - total_vectors
+        - storage_size
+        - memory_usage
+      properties:
+        total_vectors:
+          type: integer
+          description: Total number of vectors in storage
+        storage_size:
+          type: integer
+          description: Total storage size in bytes
+        memory_usage:
+          type: integer
+          description: Memory usage in bytes
+        avg_write_time:
+          type: number
+          format: float
+          description: Average write time in milliseconds
+        avg_read_time:
+          type: number
+          format: float
+          description: Average read time in milliseconds
+        file_count:
+          type: integer
+          description: Number of files in storage
+        page_size:
+          type: integer
+          description: Page size in bytes
+
+    CompactResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: [success]
+          description: Operation status
+        message:
+          type: string
+          description: Success message
+
+    # Monitoring
+    MetricsResponse:
+      type: object
+      required:
+        - indexes_count
+      properties:
+        indexes_count:
+          type: integer
+          description: Number of active indexes
+        uptime:
+          type: string
+          description: Server uptime
+        memory_usage:
+          type: string
+          description: Current memory usage
+        requests:
+          type: string
+          description: Request count information
+
+    # Error Responses
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - status
+        - success
+      properties:
+        error:
+          type: string
+          description: Error message
+        status:
+          type: integer
+          description: HTTP status code
+        success:
+          type: boolean
+          enum: [false]
+          description: Always false for errors
+
+tags:
+  - name: Health
+    description: Health check and status endpoints
+  - name: Documentation
+    description: API documentation and OpenAPI specification
+  - name: Index Management
+    description: Create, read, update, and delete vector indexes
+  - name: Vector Operations
+    description: Insert and search vectors within indexes
+  - name: Storage
+    description: Storage engine operations and statistics
+  - name: Monitoring
+    description: Performance metrics and system monitoring
+
+externalDocs:
+  description: VJVector Documentation
+  url: https://github.com/vijaynallagatla/vjvector
