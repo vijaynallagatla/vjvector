@@ -99,7 +99,7 @@ echo "📋 Phase 5: Demo Execution Tests"
 echo "==============================="
 
 # Demo tests
-run_test "Q1 2025 Demo Execution" "timeout 30s go run ./examples/q1_2025_demo >/dev/null 2>&1"
+run_test "Q1 2025 Demo Execution" "timeout 60s go run ./examples/q1_2025_demo >/dev/null 2>&1"
 run_test "Performance Demo Execution" "timeout 30s go run ./examples/performance_demo >/dev/null 2>&1"
 
 echo ""

@@ -102,8 +102,8 @@ func TestStorageIntegration(t *testing.T) {
 				PageSize:        4096,
 				MaxFileSize:     1024 * 1024 * 1024, // 1GB
 				BatchSize:       100,
-				WriteBufferSize: 64 * 1024 * 1024,   // 64MB
-				CacheSize:       32 * 1024 * 1024,   // 32MB
+				WriteBufferSize: 64 * 1024 * 1024, // 64MB
+				CacheSize:       32 * 1024 * 1024, // 32MB
 				MaxOpenFiles:    1000,
 			}
 
