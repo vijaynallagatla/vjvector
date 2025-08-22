@@ -36,7 +36,7 @@ func (m *MemoryStorage) Write(vectors []*core.Vector) error {
 }
 
 // WriteWithContext stores multiple vectors with context support
-func (m *MemoryStorage) WriteWithContext(ctx context.Context, vectors []*core.Vector) error {
+func (m *MemoryStorage) WriteWithContext(_ context.Context, vectors []*core.Vector) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -59,7 +59,7 @@ func (m *MemoryStorage) Read(ids []string) ([]*core.Vector, error) {
 }
 
 // ReadWithContext retrieves vectors with context support
-func (m *MemoryStorage) ReadWithContext(ctx context.Context, ids []string) ([]*core.Vector, error) {
+func (m *MemoryStorage) ReadWithContext(_ context.Context, ids []string) ([]*core.Vector, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -84,7 +84,7 @@ func (m *MemoryStorage) Delete(ids []string) error {
 }
 
 // DeleteWithContext removes vectors with context support
-func (m *MemoryStorage) DeleteWithContext(ctx context.Context, ids []string) error {
+func (m *MemoryStorage) DeleteWithContext(_ context.Context, ids []string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 

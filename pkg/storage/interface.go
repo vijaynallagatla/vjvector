@@ -63,9 +63,9 @@ type StorageStats struct {
 type StorageType string
 
 const (
-	StorageTypeMemory  StorageType = "memory"
-	StorageTypeMMap    StorageType = "mmap"
-	StorageTypeLevelDB StorageType = "leveldb"
+	StorageTypeMemory  StorageType = "memory"  // In-memory storage
+	StorageTypeMMap    StorageType = "mmap"    // Memory-mapped file storage
+	StorageTypeLevelDB StorageType = "leveldb" // LevelDB-based storage
 )
 
 // StorageConfig holds configuration parameters for storage creation
@@ -151,7 +151,7 @@ func (f *DefaultStorageFactory) ValidateConfig(config StorageConfig) error {
 }
 
 // validateMemoryConfig validates memory storage configuration
-func (f *DefaultStorageFactory) validateMemoryConfig(config StorageConfig) error {
+func (f *DefaultStorageFactory) validateMemoryConfig(_ StorageConfig) error {
 	// Memory storage has minimal validation requirements
 	return nil
 }

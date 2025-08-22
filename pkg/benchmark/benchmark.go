@@ -126,7 +126,7 @@ func NewBenchmarkSuite(config BenchmarkConfig) (*BenchmarkSuite, error) {
 }
 
 // RunFullBenchmark executes the complete benchmarking suite
-func (b *BenchmarkSuite) RunFullBenchmark(ctx context.Context) error {
+func (b *BenchmarkSuite) RunFullBenchmark(_ context.Context) error {
 	fmt.Println("🚀 Starting VJVector Benchmark Suite")
 	fmt.Printf("📊 Configuration: %d vectors, %d dimensions, %s index\n",
 		b.config.VectorCount, b.config.Dimension, b.config.IndexType)
@@ -329,14 +329,15 @@ func (b *BenchmarkSuite) generateReport() {
 		fmt.Printf("\n🧪 Test: %s\n", result.TestName)
 		fmt.Printf("   ⏱️  Timestamp: %s\n", result.Timestamp.Format(time.RFC3339))
 
-		if result.TestName == "Insertion" {
+		switch result.TestName {
+		case "Insertion":
 			fmt.Printf("   📈 Insert Latency: %.2f ms\n", result.InsertLatency)
 			fmt.Printf("   🚀 Insert Throughput: %.2f ops/sec\n", result.InsertThroughput)
-		} else if result.TestName == "Search" {
+		case "Search":
 			fmt.Printf("   🔍 Search Latency: %.2f ms (avg)\n", result.SearchLatency)
 			fmt.Printf("   📊 P50: %.2f ms, P95: %.2f ms, P99: %.2f ms\n",
 				result.SearchLatencyP50, result.SearchLatencyP95, result.SearchLatencyP99)
-		} else if result.TestName == "Storage" {
+		case "Storage":
 			fmt.Printf("   💾 Memory Usage: %.2f MB\n", float64(result.MemoryUsage)/1024/1024)
 			fmt.Printf("   📁 Index Size: %.2f MB\n", float64(result.IndexSize)/1024/1024)
 		}

@@ -58,8 +58,8 @@ type IndexStats struct {
 type IndexType string
 
 const (
-	IndexTypeHNSW IndexType = "hnsw"
-	IndexTypeIVF  IndexType = "ivf"
+	IndexTypeHNSW IndexType = "hnsw" // Hierarchical Navigable Small World
+	IndexTypeIVF  IndexType = "ivf"  // Inverted File Index
 )
 
 // IndexConfig holds configuration parameters for index creation

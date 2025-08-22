@@ -58,7 +58,11 @@ func demoHNSW() {
 		log.Printf("Failed to create HNSW index: %v", err)
 		return
 	}
-	defer idx.Close()
+	defer func() {
+		if err := idx.Close(); err != nil {
+			log.Printf("Warning: failed to close index: %v", err)
+		}
+	}()
 
 	fmt.Printf("   ✅ HNSW Index created: %d dimensions, max %d elements\n",
 		config.Dimension, config.MaxElements)
@@ -114,7 +118,11 @@ func demoIVF() {
 		log.Printf("Failed to create IVF index: %v", err)
 		return
 	}
-	defer idx.Close()
+	defer func() {
+		if err := idx.Close(); err != nil {
+			log.Printf("Warning: failed to close index: %v", err)
+		}
+	}()
 
 	fmt.Printf("   ✅ IVF Index created: %d dimensions, %d clusters\n",
 		config.Dimension, config.NumClusters)
@@ -167,7 +175,11 @@ func demoStorage() {
 		log.Printf("Failed to create memory storage: %v", err)
 		return
 	}
-	defer memoryStore.Close()
+	defer func() {
+		if err := memoryStore.Close(); err != nil {
+			log.Printf("Warning: failed to close memory store: %v", err)
+		}
+	}()
 
 	fmt.Println("   ✅ Memory Storage created")
 
@@ -186,7 +198,11 @@ func demoStorage() {
 		log.Printf("Failed to create MMap storage: %v", err)
 		return
 	}
-	defer mmapStore.Close()
+	defer func() {
+		if err := mmapStore.Close(); err != nil {
+			log.Printf("Warning: failed to close mmap store: %v", err)
+		}
+	}()
 
 	fmt.Println("   ✅ MMap Storage created")
 
@@ -269,7 +285,11 @@ func demoBenchmark() {
 		log.Printf("Failed to create benchmark suite: %v", err)
 		return
 	}
-	defer suite.Close()
+	defer func() {
+		if err := suite.Close(); err != nil {
+			log.Printf("Warning: failed to close benchmark suite: %v", err)
+		}
+	}()
 
 	fmt.Println("   ✅ Benchmark suite created")
 
