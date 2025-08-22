@@ -453,32 +453,26 @@ components:
           type: integer
           minimum: 1
           maximum: 100
-          description: HNSW: Maximum connections per layer
         ef_construction:
           type: integer
           minimum: 1
           maximum: 1000
-          description: HNSW: Search depth during construction
         ef_search:
           type: integer
           minimum: 1
           maximum: 1000
-          description: HNSW: Search depth during queries
         max_layers:
           type: integer
           minimum: 1
           maximum: 100
-          description: HNSW: Maximum number of layers
         num_clusters:
           type: integer
           minimum: 1
           maximum: 10000
-          description: IVF: Number of clusters
         cluster_size:
           type: integer
           minimum: 1
           maximum: 100000
-          description: IVF: Target cluster size
         distance_metric:
           type: string
           enum: [cosine, euclidean, dot]
