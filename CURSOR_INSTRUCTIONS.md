@@ -50,7 +50,7 @@ vjvector/
 ## 🔧 Development Guidelines
 
 ### 1. Go Best Practices
-- **Go Modules**: Use Go 1.25+ modules with proper dependency management
+- **Go Modules**: Use Go 1.25.0+ modules with proper dependency management
 - **Error Handling**: Use `fmt.Errorf` with `%w` for error wrapping
 - **Context**: Use `context.Context` for cancellation and timeouts
 - **Interfaces**: Define small, focused interfaces in the package that uses them

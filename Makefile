@@ -42,7 +42,7 @@ clean:
 # Run linter
 lint:
 	@echo "Running linter..."
-	golangci-lint run
+	./tools/run-lint.sh run
 
 # Format code
 format:
@@ -74,7 +74,7 @@ docker-run:
 # Install development tools
 install-tools:
 	@echo "Installing development tools..."
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2
 	go install golang.org/x/tools/cmd/goimports@latest
 	@echo "Tools installed"
 

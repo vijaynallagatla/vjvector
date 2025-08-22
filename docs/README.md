@@ -100,7 +100,7 @@ docs/
 - **System Layer**: Security, monitoring, clustering
 
 ### **Key Technologies**
-- **Language**: Go 1.25+ (performance, simplicity, concurrency)
+- **Language**: Go 1.25.0+ (performance, simplicity, concurrency)
 - **Storage**: Memory-mapped files, LevelDB for metadata
 - **Indexing**: HNSW, IVF, custom algorithms
 - **Performance**: SIMD operations, memory optimization

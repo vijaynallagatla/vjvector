@@ -1,15 +1,15 @@
+# golangci-lint v2 configuration
+version: 2
+
 run:
   timeout: 5m
   go: "1.25"
 
 linters:
   enable:
-    - gofmt
-    - goimports
     - govet
     - errcheck
     - staticcheck
-    - gosimple
     - ineffassign
     - unused
     - misspell
@@ -17,6 +17,11 @@ linters:
     - prealloc
     - gocritic
     - revive
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 linters-settings:
   gocritic:

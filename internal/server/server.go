@@ -71,7 +71,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 }
 
 // healthHandler handles health check requests
-func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status":"healthy","service":"vjvector"}`))
