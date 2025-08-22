@@ -36,7 +36,7 @@ VJVector is a high-performance vector database built from scratch with native AI
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.25 or later
 - Git
 
 ### From Source
