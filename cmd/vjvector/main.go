@@ -1,3 +1,5 @@
+// Package main provides the command-line interface for the VJVector database.
+// It includes commands for serving the database, generating embeddings, and querying data.
 package main
 
 import (
@@ -32,25 +34,19 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "serve",
-				Usage: "Start the vector database server",
-				Action: func(c *cli.Context) error {
-					return startServer(c)
-				},
+				Name:   "serve",
+				Usage:  "Start the vector database server",
+				Action: startServer,
 			},
 			{
-				Name:  "embed",
-				Usage: "Generate embeddings for text",
-				Action: func(c *cli.Context) error {
-					return generateEmbeddings(c)
-				},
+				Name:   "embed",
+				Usage:  "Generate embeddings for text",
+				Action: generateEmbeddings,
 			},
 			{
-				Name:  "query",
-				Usage: "Query the vector database",
-				Action: func(c *cli.Context) error {
-					return queryDatabase(c)
-				},
+				Name:   "query",
+				Usage:  "Query the vector database",
+				Action: queryDatabase,
 			},
 		},
 	}
@@ -79,13 +75,13 @@ func startServer(c *cli.Context) error {
 	return srv.Start()
 }
 
-func generateEmbeddings(c *cli.Context) error {
+func generateEmbeddings(_ *cli.Context) error {
 	// TODO: Implement embedding generation
 	fmt.Println("Embedding generation not yet implemented")
 	return nil
 }
 
-func queryDatabase(c *cli.Context) error {
+func queryDatabase(_ *cli.Context) error {
 	// TODO: Implement database querying
 	fmt.Println("Database querying not yet implemented")
 	return nil

@@ -1,18 +1,21 @@
+// Package config provides configuration management for the VJVector database.
+// It handles loading and parsing of YAML configuration files with sensible defaults.
 package config
 
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 // Config represents the application configuration
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
+	Server    ServerConfig    `yaml:"server"`
+	Database  DatabaseConfig  `yaml:"database"`
 	Embedding EmbeddingConfig `yaml:"embedding"`
-	Logging  LoggingConfig  `yaml:"logging"`
+	Logging   LoggingConfig   `yaml:"logging"`
 }
 
 // ServerConfig holds server-related configuration
@@ -30,9 +33,9 @@ type DatabaseConfig struct {
 
 // EmbeddingConfig holds embedding model configuration
 type EmbeddingConfig struct {
-	ModelName string  `yaml:"model_name"`
-	Dimension int     `yaml:"dimension"`
-	BatchSize int     `yaml:"batch_size"`
+	ModelName string `yaml:"model_name"`
+	Dimension int    `yaml:"dimension"`
+	BatchSize int    `yaml:"batch_size"`
 }
 
 // LoggingConfig holds logging configuration
@@ -43,6 +46,15 @@ type LoggingConfig struct {
 
 // Load reads configuration from a file
 func Load(configPath string) (*Config, error) {
+	// Validate configPath to prevent directory traversal attacks
+	if configPath == "" || strings.Contains(configPath, "..") || strings.Contains(configPath, "/") || strings.Contains(configPath, "\\") {
+		return nil, fmt.Errorf("invalid config path: %s", configPath)
+	}
+	// Only allow simple filenames in current directory (no path separators)
+	if strings.Contains(configPath, "/") || strings.Contains(configPath, "\\") {
+		return nil, fmt.Errorf("config path must be a simple filename: %s", configPath)
+	}
+	// nolint:gosec // Path is validated above to prevent directory traversal
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)

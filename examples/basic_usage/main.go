@@ -1,3 +1,5 @@
+// Package main demonstrates basic usage of the VJVector database core functionality.
+// This example shows how to create vectors, collections, and perform similarity operations.
 package main
 
 import (
@@ -65,7 +67,7 @@ func main() {
 	fmt.Println("\nNormalizing vector 1...")
 	originalMagnitude := vectors[0].Magnitude
 	vectors[0].Normalize()
-	fmt.Printf("Original magnitude: %.4f, Normalized magnitude: %.4f\n", 
+	fmt.Printf("Original magnitude: %.4f, Normalized magnitude: %.4f\n",
 		originalMagnitude, vectors[0].Magnitude)
 
 	// Demonstrate search query structure

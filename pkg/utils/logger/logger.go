@@ -1,3 +1,5 @@
+// Package logger provides structured logging functionality for the VJVector database.
+// It uses Go's standard library slog package for consistent logging across the application.
 package logger
 
 import (

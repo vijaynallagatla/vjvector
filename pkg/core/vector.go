@@ -1,3 +1,5 @@
+// Package core provides the fundamental data structures and interfaces for the VJVector database.
+// It defines vectors, collections, and search operations that form the backbone of the system.
 package core
 
 import (
@@ -10,23 +12,23 @@ import (
 
 // Vector represents a vector in the database
 type Vector struct {
-	ID          string                 `json:"id"`
-	Collection  string                 `json:"collection"`
-	Embedding   []float64              `json:"embedding"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	Text        string                 `json:"text,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
-	Dimension   int                    `json:"dimension"`
-	Magnitude   float64                `json:"magnitude"`
-	Normalized  bool                   `json:"normalized"`
+	ID         string                 `json:"id"`
+	Collection string                 `json:"collection"`
+	Embedding  []float64              `json:"embedding"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	Text       string                 `json:"text,omitempty"`
+	CreatedAt  time.Time              `json:"created_at"`
+	UpdatedAt  time.Time              `json:"updated_at"`
+	Dimension  int                    `json:"dimension"`
+	Magnitude  float64                `json:"magnitude"`
+	Normalized bool                   `json:"normalized"`
 }
 
 // NewVector creates a new vector with the given parameters
 func NewVector(collection string, embedding []float64, text string, metadata map[string]interface{}) *Vector {
 	now := time.Now()
 	magnitude := calculateMagnitude(embedding)
-	
+
 	return &Vector{
 		ID:         uuid.New().String(),
 		Collection: collection,
@@ -46,15 +48,15 @@ func (v *Vector) Normalize() {
 	if v.Normalized {
 		return
 	}
-	
+
 	if v.Magnitude == 0 {
 		return
 	}
-	
+
 	for i := range v.Embedding {
 		v.Embedding[i] /= v.Magnitude
 	}
-	
+
 	v.Magnitude = 1.0
 	v.Normalized = true
 	v.UpdatedAt = time.Now()
@@ -65,17 +67,17 @@ func (v *Vector) Similarity(other *Vector) (float64, error) {
 	if v.Dimension != other.Dimension {
 		return 0, fmt.Errorf("dimension mismatch: %d != %d", v.Dimension, other.Dimension)
 	}
-	
+
 	dotProduct := 0.0
 	for i := 0; i < v.Dimension; i++ {
 		dotProduct += v.Embedding[i] * other.Embedding[i]
 	}
-	
+
 	// Normalize by magnitudes if vectors aren't already normalized
 	if !v.Normalized || !other.Normalized {
 		return dotProduct / (v.Magnitude * other.Magnitude), nil
 	}
-	
+
 	return dotProduct, nil
 }
 
@@ -84,13 +86,13 @@ func (v *Vector) Distance(other *Vector) (float64, error) {
 	if v.Dimension != other.Dimension {
 		return 0, fmt.Errorf("dimension mismatch: %d != %d", v.Dimension, other.Dimension)
 	}
-	
+
 	sum := 0.0
 	for i := 0; i < v.Dimension; i++ {
 		diff := v.Embedding[i] - other.Embedding[i]
 		sum += diff * diff
 	}
-	
+
 	return math.Sqrt(sum), nil
 }
 

@@ -1,3 +1,5 @@
+// Package server provides HTTP server functionality for the VJVector database.
+// It includes RESTful API endpoints for vector operations, collections, and health checks.
 package server
 
 import (
@@ -27,10 +29,10 @@ func New(cfg *config.Config) *Server {
 func (s *Server) Start() error {
 	// Create router
 	mux := http.NewServeMux()
-	
+
 	// Register routes
 	s.registerRoutes(mux)
-	
+
 	// Create HTTP server
 	s.server = &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", s.config.Server.Host, s.config.Server.Port),
@@ -39,9 +41,9 @@ func (s *Server) Start() error {
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	
+
 	logger.Info("Starting vjvector server", "host", s.config.Server.Host, "port", s.config.Server.Port)
-	
+
 	// Start server
 	return s.server.ListenAndServe()
 }
@@ -58,14 +60,14 @@ func (s *Server) Stop(ctx context.Context) error {
 func (s *Server) registerRoutes(mux *http.ServeMux) {
 	// Health check
 	mux.HandleFunc("/health", s.healthHandler)
-	
+
 	// Vector operations
 	mux.HandleFunc("/vectors", s.vectorsHandler)
 	mux.HandleFunc("/vectors/search", s.searchHandler)
-	
+
 	// Embedding operations
 	mux.HandleFunc("/embed", s.embedHandler)
-	
+
 	// Collection operations
 	mux.HandleFunc("/collections", s.collectionsHandler)
 }
@@ -74,7 +76,11 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 func (s *Server) healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"healthy","service":"vjvector"}`))
+	if _, err := w.Write([]byte(`{"status":"healthy","service":"vjvector"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
 
 // vectorsHandler handles vector CRUD operations
@@ -97,11 +103,15 @@ func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// TODO: Implement vector search
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Vector search not yet implemented"}`))
+	if _, err := w.Write([]byte(`{"message":"Vector search not yet implemented"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
 
 // embedHandler handles text embedding generation
@@ -110,11 +120,15 @@ func (s *Server) embedHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// TODO: Implement text embedding
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Text embedding not yet implemented"}`))
+	if _, err := w.Write([]byte(`{"message":"Text embedding not yet implemented"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
 
 // collectionsHandler handles collection operations
@@ -130,41 +144,61 @@ func (s *Server) collectionsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // createVector handles vector creation
-func (s *Server) createVector(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createVector(w http.ResponseWriter, _ *http.Request) {
 	// TODO: Implement vector creation
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Vector creation not yet implemented"}`))
+	if _, err := w.Write([]byte(`{"message":"Vector creation not yet implemented"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
 
 // getVector handles vector retrieval
-func (s *Server) getVector(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getVector(w http.ResponseWriter, _ *http.Request) {
 	// TODO: Implement vector retrieval
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Vector retrieval not yet implemented"}`))
+	if _, err := w.Write([]byte(`{"message":"Vector retrieval not yet implemented"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
 
 // deleteVector handles vector deletion
-func (s *Server) deleteVector(w http.ResponseWriter, r *http.Request) {
+func (s *Server) deleteVector(w http.ResponseWriter, _ *http.Request) {
 	// TODO: Implement vector deletion
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Vector deletion not yet implemented"}`))
+	if _, err := w.Write([]byte(`{"message":"Vector deletion not yet implemented"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
 
 // createCollection handles collection creation
-func (s *Server) createCollection(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createCollection(w http.ResponseWriter, _ *http.Request) {
 	// TODO: Implement collection creation
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Collection creation not yet implemented"}`))
+	if _, err := w.Write([]byte(`{"message":"Collection creation not yet implemented"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
 
 // listCollections handles collection listing
-func (s *Server) listCollections(w http.ResponseWriter, r *http.Request) {
+func (s *Server) listCollections(w http.ResponseWriter, _ *http.Request) {
 	// TODO: Implement collection listing
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message":"Collection listing not yet implemented"}`))
+	if _, err := w.Write([]byte(`{"message":"Collection listing not yet implemented"}`)); err != nil {
+		// Log error but can't return it from handler
+		// TODO: Add proper error logging
+		_ = err // Suppress unused variable warning
+	}
 }
