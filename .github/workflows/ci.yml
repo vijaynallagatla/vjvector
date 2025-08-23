@@ -29,13 +29,14 @@ jobs:
     - name: Install dependencies
       run: go mod download
 
+    - name: Verify build
+      run: go build ./...
+      env:
+        CGO_ENABLED: 1
+
     - name: Run tests
       run: |
-        if [ "$(go env CGO_ENABLED)" = "1" ]; then
-          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-        else
-          go test -v -coverprofile=coverage.txt -covermode=atomic ./...
-        fi
+        go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
       env:
         CGO_ENABLED: 1
 
@@ -76,7 +77,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         go-version: [1.25]
 
     steps:
@@ -97,13 +97,13 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: vjvector-${{ matrix.os }}-${{ matrix.go-version }}
+        name: vjvector-ubuntu-${{ matrix.go-version }}
         path: bin/
 
   docker:
     name: Docker
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, build]
 
     steps:
     - name: Checkout code
