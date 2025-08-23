@@ -1,0 +1,526 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vjvector
+  labels:
+    name: vjvector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vjvector-master
+  namespace: vjvector
+  labels:
+    app: vjvector
+    role: master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vjvector
+      role: master
+  template:
+    metadata:
+      labels:
+        app: vjvector
+        role: master
+    spec:
+      containers:
+      - name: vjvector
+        image: vjvector:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: metrics
+        env:
+        - name: NODE_ROLE
+          value: "master"
+        - name: NODE_ID
+          value: "master-$(POD_NAME)"
+        - name: ADDRESS
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8080"
+        - name: ETCD_ENDPOINTS
+          value: "etcd-0.etcd:2379,etcd-1.etcd:2379,etcd-2.etcd:2379"
+        - name: SHARD_COUNT
+          value: "8"
+        - name: REPLICA_COUNT
+          value: "3"
+        - name: HEARTBEAT_INTERVAL
+          value: "5s"
+        - name: ELECTION_TIMEOUT
+          value: "10s"
+        - name: MAX_CONCURRENT_REQUESTS
+          value: "1000"
+        - name: REQUEST_TIMEOUT
+          value: "30s"
+        - name: HEALTH_CHECK_INTERVAL
+          value: "30s"
+        - name: ENABLE_AUTH
+          value: "true"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: vjvector-secrets
+              key: jwt-secret
+        - name: API_KEY_REQUIRED
+          value: "true"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: vjvector-data
+          mountPath: /data
+        - name: vjvector-config
+          mountPath: /config
+      volumes:
+      - name: vjvector-data
+        persistentVolumeClaim:
+          claimName: vjvector-data-master
+      - name: vjvector-config
+        configMap:
+          name: vjvector-config
+      nodeSelector:
+        node-role: vjvector
+      tolerations:
+      - key: "node-role"
+        operator: "Equal"
+        value: "vjvector"
+        effect: "NoSchedule"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vjvector-slave
+  namespace: vjvector
+  labels:
+    app: vjvector
+    role: slave
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vjvector
+      role: slave
+  template:
+    metadata:
+      labels:
+        app: vjvector
+        role: slave
+    spec:
+      containers:
+      - name: vjvector
+        image: vjvector:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: metrics
+        env:
+        - name: NODE_ROLE
+          value: "slave"
+        - name: NODE_ID
+          value: "slave-$(POD_NAME)"
+        - name: ADDRESS
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8080"
+        - name: ETCD_ENDPOINTS
+          value: "etcd-0.etcd:2379,etcd-1.etcd:2379,etcd-2.etcd:2379"
+        - name: SHARD_COUNT
+          value: "8"
+        - name: REPLICA_COUNT
+          value: "3"
+        - name: HEARTBEAT_INTERVAL
+          value: "5s"
+        - name: ELECTION_TIMEOUT
+          value: "10s"
+        - name: MAX_CONCURRENT_REQUESTS
+          value: "1000"
+        - name: REQUEST_TIMEOUT
+          value: "30s"
+        - name: HEALTH_CHECK_INTERVAL
+          value: "30s"
+        - name: ENABLE_AUTH
+          value: "true"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: vjvector-secrets
+              key: jwt-secret
+        - name: API_KEY_REQUIRED
+          value: "true"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: vjvector-data
+          mountPath: /data
+        - name: vjvector-config
+          mountPath: /config
+      volumes:
+      - name: vjvector-data
+        persistentVolumeClaim:
+          claimName: vjvector-data-slave
+      - name: vjvector-config
+        configMap:
+          name: vjvector-config
+      nodeSelector:
+        node-role: vjvector
+      tolerations:
+      - key: "node-role"
+        operator: "Equal"
+        value: "vjvector"
+        effect: "NoSchedule"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vjvector-service
+  namespace: vjvector
+  labels:
+    app: vjvector
+spec:
+  selector:
+    app: vjvector
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 8081
+    targetPort: 8081
+    name: metrics
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vjvector-master-service
+  namespace: vjvector
+  labels:
+    app: vjvector
+    role: master
+spec:
+  selector:
+    app: vjvector
+    role: master
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 8081
+    targetPort: 8081
+    name: metrics
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vjvector-slave-service
+  namespace: vjvector
+  labels:
+    app: vjvector
+    role: slave
+spec:
+  selector:
+    app: vjvector
+    role: slave
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 8081
+    targetPort: 8081
+    name: metrics
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vjvector-ingress
+  namespace: vjvector
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - vjvector.example.com
+    secretName: vjvector-tls
+  rules:
+  - host: vjvector.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vjvector-service
+            port:
+              number: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vjvector-config
+  namespace: vjvector
+data:
+  config.yaml: |
+    # VJVector Configuration
+    node:
+      role: "auto"
+      address: "0.0.0.0"
+      port: 8080
+      max_concurrent_requests: 1000
+      request_timeout: "30s"
+      health_check_interval: "30s"
+    
+    clustering:
+      enabled: true
+      etcd_endpoints:
+        - "etcd-0.etcd:2379"
+        - "etcd-1.etcd:2379"
+        - "etcd-2.etcd:2379"
+      heartbeat_interval: "5s"
+      election_timeout: "10s"
+      max_peers: 10
+      shard_count: 8
+      replica_count: 3
+      load_balancing_strategy: "round_robin"
+    
+    embedding:
+      providers:
+        - name: "local"
+          type: "local"
+          enabled: true
+          model: "all-MiniLM-L6-v2"
+          dimension: 384
+        - name: "openai"
+          type: "openai"
+          enabled: false
+          api_key: ""
+          model: "text-embedding-ada-002"
+          dimension: 1536
+    
+    rag:
+      enabled: true
+      query_expansion:
+        enabled: true
+        strategies:
+          - "synonym"
+          - "semantic"
+          - "context_aware"
+      result_reranking:
+        enabled: true
+        strategies:
+          - "semantic"
+          - "context_aware"
+          - "hybrid"
+      context_awareness:
+        enabled: true
+        strategies:
+          - "user"
+          - "domain"
+          - "temporal"
+          - "location"
+    
+    storage:
+      type: "leveldb"
+      data_path: "/data"
+      max_file_size: "1GB"
+      page_size: 4096
+      batch_size: 1000
+      flush_interval: 100
+    
+    index:
+      type: "hnsw"
+      dimension: 384
+      max_elements: 1000000
+      m: 16
+      ef_construction: 200
+      ef_search: 100
+      max_layers: 16
+      distance_metric: "cosine"
+      normalize: true
+    
+    security:
+      enable_auth: true
+      jwt_secret: ""
+      api_key_required: true
+      allowed_origins:
+        - "https://vjvector.example.com"
+    
+    monitoring:
+      enabled: true
+      metrics_port: 8081
+      prometheus_endpoint: "/metrics"
+      health_endpoint: "/health"
+      ready_endpoint: "/ready"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vjvector-secrets
+  namespace: vjvector
+type: Opaque
+data:
+  jwt-secret: <base64-encoded-jwt-secret>
+  openai-api-key: <base64-encoded-openai-api-key>
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vjvector-data-master
+  namespace: vjvector
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vjvector-data-slave
+  namespace: vjvector
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vjvector-hpa
+  namespace: vjvector
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vjvector-slave
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vjvector-pdb
+  namespace: vjvector
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: vjvector
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ServiceAccount
+metadata:
+  name: vjvector-sa
+  namespace: vjvector
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vjvector-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vjvector-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vjvector-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: vjvector-sa
+  namespace: vjvector
