@@ -47,45 +47,45 @@ const (
 	RAGOperationResultReranking  RAGOperation = "result_reranking"
 	RAGOperationContextRetrieval RAGOperation = "context_retrieval"
 	RAGOperationEndToEndRAG      RAGOperation = "end_to_end_rag"
-	RAGOperationBatchSearch       RAGOperation = "batch_search"
-	RAGOperationBatchRerank       RAGOperation = "batch_rerank"
+	RAGOperationBatchSearch      RAGOperation = "batch_search"
+	RAGOperationBatchRerank      RAGOperation = "batch_rerank"
 )
 
 // RAGRequest represents a RAG operation request
 type RAGRequest struct {
-	Operation     RAGOperation                `json:"operation"`
-	Query         string                      `json:"query"`
-	Context       map[string]interface{}      `json:"context,omitempty"`
-	Collection    string                      `json:"collection,omitempty"`
-	Options       map[string]interface{}      `json:"options,omitempty"`
-	RAGConfig     RAGConfig                  `json:"rag_config,omitempty"`
+	Operation  RAGOperation           `json:"operation"`
+	Query      string                 `json:"query"`
+	Context    map[string]interface{} `json:"context,omitempty"`
+	Collection string                 `json:"collection,omitempty"`
+	Options    map[string]interface{} `json:"options,omitempty"`
+	RAGConfig  RAGConfig              `json:"rag_config,omitempty"`
 }
 
 // RAGResponse represents a RAG operation response
 type RAGResponse struct {
-	Operation            RAGOperation           `json:"operation"`
-	Query                string                 `json:"query"`
-	OriginalQuery        string                 `json:"original_query,omitempty"`
-	ExpandedQueries      []string               `json:"expanded_queries,omitempty"`
-	Results              []SearchResult         `json:"results"`
-	RerankedResults      []SearchResult         `json:"reranked_results,omitempty"`
-	ContextEnhancements  []string               `json:"context_enhancements,omitempty"`
-	ProcessingTime       time.Duration          `json:"processing_time"`
-	Confidence           float64                `json:"confidence"`
-	Metadata             map[string]interface{} `json:"metadata,omitempty"`
+	Operation           RAGOperation           `json:"operation"`
+	Query               string                 `json:"query"`
+	OriginalQuery       string                 `json:"original_query,omitempty"`
+	ExpandedQueries     []string               `json:"expanded_queries,omitempty"`
+	Results             []SearchResult         `json:"results"`
+	RerankedResults     []SearchResult         `json:"reranked_results,omitempty"`
+	ContextEnhancements []string               `json:"context_enhancements,omitempty"`
+	ProcessingTime      time.Duration          `json:"processing_time"`
+	Confidence          float64                `json:"confidence"`
+	Metadata            map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // BatchRAGRequest represents a batch RAG operation request
 type BatchRAGRequest struct {
-	Operation     RAGOperation                `json:"operation"`
-	Queries       []string                    `json:"queries"`
-	Context       map[string]interface{}      `json:"context,omitempty"`
-	Collection    string                      `json:"collection,omitempty"`
-	BatchSize     int                         `json:"batch_size"`
-	MaxConcurrent int                         `json:"max_concurrent"`
-	Timeout       string                      `json:"timeout"`
-	Options       map[string]interface{}      `json:"options,omitempty"`
-	RAGConfig     RAGConfig                  `json:"rag_config,omitempty"`
+	Operation     RAGOperation           `json:"operation"`
+	Queries       []string               `json:"queries"`
+	Context       map[string]interface{} `json:"context,omitempty"`
+	Collection    string                 `json:"collection,omitempty"`
+	BatchSize     int                    `json:"batch_size"`
+	MaxConcurrent int                    `json:"max_concurrent"`
+	Timeout       string                 `json:"timeout"`
+	Options       map[string]interface{} `json:"options,omitempty"`
+	RAGConfig     RAGConfig              `json:"rag_config,omitempty"`
 }
 
 // BatchRAGResponse represents a batch RAG operation response
@@ -97,18 +97,18 @@ type BatchRAGResponse struct {
 	ErrorCount     int             `json:"error_count"`
 	Errors         []BatchError    `json:"errors,omitempty"`
 	Statistics     BatchStatistics `json:"statistics"`
-	RAGMetrics     RAGMetrics     `json:"rag_metrics,omitempty"`
+	RAGMetrics     RAGMetrics      `json:"rag_metrics,omitempty"`
 }
 
 // RAGConfig represents configuration for RAG operations
 type RAGConfig struct {
-	EnableQueryExpansion   bool                    `json:"enable_query_expansion"`
-	EnableResultReranking  bool                    `json:"enable_result_reranking"`
-	EnableContextAwareness bool                    `json:"enable_context_awareness"`
-	QueryExpansionConfig   QueryExpansionConfig    `json:"query_expansion_config,omitempty"`
-	RerankingConfig        RerankingConfig         `json:"reranking_config,omitempty"`
-	ContextConfig          ContextConfig           `json:"context_config,omitempty"`
-	SearchConfig           SearchConfig            `json:"search_config,omitempty"`
+	EnableQueryExpansion   bool                 `json:"enable_query_expansion"`
+	EnableResultReranking  bool                 `json:"enable_result_reranking"`
+	EnableContextAwareness bool                 `json:"enable_context_awareness"`
+	QueryExpansionConfig   QueryExpansionConfig `json:"query_expansion_config,omitempty"`
+	RerankingConfig        RerankingConfig      `json:"reranking_config,omitempty"`
+	ContextConfig          ContextConfig        `json:"context_config,omitempty"`
+	SearchConfig           SearchConfig         `json:"search_config,omitempty"`
 }
 
 // QueryExpansionConfig represents configuration for query expansion
@@ -153,12 +153,12 @@ type SearchConfig struct {
 
 // SearchResult represents a search result with ranking
 type SearchResult struct {
-	Vector     *Vector                 `json:"vector"`
-	Score      float64                 `json:"score"`
-	Rank       int                     `json:"rank"`
-	Similarity float64                 `json:"similarity"`
-	Context    map[string]interface{}  `json:"context,omitempty"`
-	Metadata   map[string]interface{}  `json:"metadata,omitempty"`
+	Vector     *Vector                `json:"vector"`
+	Score      float64                `json:"score"`
+	Rank       int                    `json:"rank"`
+	Similarity float64                `json:"similarity"`
+	Context    map[string]interface{} `json:"context,omitempty"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // RAGMetrics represents metrics specific to RAG operations
