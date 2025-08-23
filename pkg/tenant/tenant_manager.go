@@ -168,7 +168,7 @@ func (m *DefaultTenantManager) ListTenants(ctx context.Context, limit, offset in
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	var tenantList []*Tenant
+	tenantList := make([]*Tenant, 0, len(m.tenants))
 	for _, tenant := range m.tenants {
 		tenantList = append(tenantList, tenant)
 	}

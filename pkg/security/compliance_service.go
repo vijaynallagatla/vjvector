@@ -151,7 +151,7 @@ func (s *DefaultComplianceService) GetFrameworks(ctx context.Context) ([]string,
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var frameworks []string
+	frameworks := make([]string, 0, len(s.frameworks))
 	for framework := range s.frameworks {
 		frameworks = append(frameworks, framework)
 	}

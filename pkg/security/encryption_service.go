@@ -308,10 +308,10 @@ func (s *DefaultEncryptionService) getOrCreateKey(ctx context.Context, policyID 
 	for _, key := range s.keys {
 		if key.TenantID == policy.TenantID && key.Status == EncryptionKeyStatusActive {
 			// Check if key needs rotation
-			if time.Since(key.CreatedAt) > time.Duration(s.config.KeyRotationDays)*24*time.Hour {
-				// Key needs rotation, but continue using it for now
-				// In production, implement proper key rotation
-			}
+			// if time.Since(key.CreatedAt) > time.Duration(s.config.KeyRotationDays)*24*time.Hour {
+			// 	// Key needs rotation, but continue using it for now
+			// 	// In production, implement proper key rotation
+			// }
 			return key, nil
 		}
 	}
@@ -515,14 +515,20 @@ func (s *DefaultEncryptionService) validatePolicy(policy *EncryptionPolicy) erro
 // generateKeyID generates a unique key ID
 func (s *DefaultEncryptionService) generateKeyID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return ""
+	}
 	return fmt.Sprintf("key_%s", hex.EncodeToString(bytes))
 }
 
 // generatePolicyID generates a unique policy ID
 func (s *DefaultEncryptionService) generatePolicyID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return ""
+	}
 	return fmt.Sprintf("policy_%s", hex.EncodeToString(bytes))
 }
 

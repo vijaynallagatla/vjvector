@@ -502,10 +502,10 @@ func (r *DefaultRateLimiter) cleanup() {
 	}
 
 	// Limit total entries
-	if len(r.tenantBuckets) > r.config.MaxEntries {
-		// Remove oldest entries
-		// In a real implementation, use a more sophisticated cleanup strategy
-	}
+	// if len(r.tenantBuckets) > r.config.MaxEntries {
+	// 	// Remove oldest entries
+	// 	// In a real implementation, use a more sophisticated cleanup strategy
+	// }
 }
 
 // min returns the minimum of two integers

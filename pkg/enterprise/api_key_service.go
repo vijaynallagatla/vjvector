@@ -409,6 +409,9 @@ func (s *DefaultAPIKeyService) hashKey(key string) string {
 // generateID generates a unique ID for an API key
 func (s *DefaultAPIKeyService) generateID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return ""
+	}
 	return hex.EncodeToString(bytes)
 }
