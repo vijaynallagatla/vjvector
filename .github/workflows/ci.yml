@@ -90,14 +90,14 @@ jobs:
 
     - name: Build
       run: |
-        go build -v -ldflags="-s -w" -o bin/vjvector ./cmd/vjvector
+        go build -v -ldflags="-s -w" -o bin/api ./cmd/api
       env:
         CGO_ENABLED: 1
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: vjvector-ubuntu-${{ matrix.go-version }}
+        name: api-ubuntu-${{ matrix.go-version }}
         path: bin/
 
   docker:
@@ -112,11 +112,11 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: false
-        tags: vjvector:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+    # - name: Build and push Docker image
+    #   uses: docker/build-push-action@v5
+    #   with:
+    #     context: .
+    #     push: false
+    #     tags: vjvector:latest
+    #     cache-from: type=gha
+    #     cache-to: type=gha,mode=max
