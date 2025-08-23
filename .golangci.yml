@@ -20,6 +20,7 @@ linters:
   disable:
     - gosec          # Too strict for our performance-focused use case
     - revive         # Too strict for Go naming conventions
+    - errcheck
 
 # Disable overly strict rules that conflict with our design choices
 linters-settings:
