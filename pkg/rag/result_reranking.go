@@ -379,7 +379,7 @@ func NewContextAwareReranker(config *ContextRerankingConfig) *ContextAwareRerank
 
 // Rerank reranks results using context information
 func (r *ContextAwareReranker) Rerank(ctx context.Context, results []*QueryResult, query *Query) ([]*QueryResult, error) {
-	var contextScoredResults []*QueryResult
+	contextScoredResults := make([]*QueryResult, 0)
 
 	for _, result := range results {
 		contextScore := r.calculateContextScore(result, query)

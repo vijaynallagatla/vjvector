@@ -30,7 +30,6 @@ type embeddingStatistics struct {
 	cacheHits           int64
 	cacheMisses         int64
 	errors              int64
-	mu                  sync.Mutex
 }
 
 // NewBatchEmbeddingProcessor creates a new batch embedding processor
@@ -75,8 +74,8 @@ func (ep *embeddingProcessor) GenerateBatchEmbeddings(ctx context.Context, req *
 
 	// Initialize response
 	response := &BatchEmbeddingResponse{
-		Model:      req.Model,
-		Provider:   req.Provider,
+		Model:    req.Model,
+		Provider: req.Provider,
 		Statistics: BatchStatistics{
 			StartTime:  startTime,
 			TotalItems: len(req.Texts),
@@ -230,11 +229,11 @@ func (ep *embeddingProcessor) processBatches(ctx context.Context, req *BatchEmbe
 }
 
 // processBatch processes a single batch of texts
-func (ep *embeddingProcessor) processBatch(ctx context.Context, req *BatchEmbeddingRequest, startIdx, endIdx, batchIdx int, 
+func (ep *embeddingProcessor) processBatch(ctx context.Context, req *BatchEmbeddingRequest, startIdx, endIdx, batchIdx int,
 	embeddings [][]float64, errors *[]BatchError, errorsMu *sync.Mutex, stats *processStats) {
-	
+
 	batchTexts := req.Texts[startIdx:endIdx]
-	
+
 	// Create embedding request for this batch
 	embeddingReq := &embedding.EmbeddingRequest{
 		Texts:     batchTexts,
@@ -264,7 +263,7 @@ func (ep *embeddingProcessor) processBatch(ctx context.Context, req *BatchEmbedd
 			})
 		}
 		errorsMu.Unlock()
-		
+
 		ep.logger.Error("Batch embedding generation failed", "batch", batchIdx, "error", err)
 		return
 	}
@@ -284,9 +283,9 @@ func (ep *embeddingProcessor) processBatch(ctx context.Context, req *BatchEmbedd
 	}
 	stats.mu.Unlock()
 
-	ep.logger.Debug("Batch processed successfully", 
-		"batch", batchIdx, 
-		"texts", len(batchTexts), 
+	ep.logger.Debug("Batch processed successfully",
+		"batch", batchIdx,
+		"texts", len(batchTexts),
 		"processing_time", response.ProcessingTime,
 		"cache_hit", response.CacheHit)
 }
@@ -390,9 +389,6 @@ func (ep *embeddingProcessor) initializeProviderCapabilities() {
 
 // updateStatistics updates global statistics after batch processing
 func (ep *embeddingProcessor) updateStatistics(response *BatchEmbeddingResponse) {
-	ep.statistics.mu.Lock()
-	defer ep.statistics.mu.Unlock()
-
 	ep.statistics.totalBatches++
 	ep.statistics.totalTexts += int64(response.Statistics.TotalItems)
 	ep.statistics.totalProcessingTime += response.ProcessingTime
@@ -404,9 +400,6 @@ func (ep *embeddingProcessor) updateStatistics(response *BatchEmbeddingResponse)
 
 // GetStatistics returns current embedding processor statistics
 func (ep *embeddingProcessor) GetStatistics() embeddingStatistics {
-	ep.statistics.mu.Lock()
-	defer ep.statistics.mu.Unlock()
-	
 	// Return a copy to avoid lock copying
 	stats := embeddingStatistics{
 		totalBatches:        ep.statistics.totalBatches,

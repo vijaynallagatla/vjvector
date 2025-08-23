@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"github.com/vijaynallagatla/vjvector/pkg/benchmark"
+	"github.com/vijaynallagatla/vjvector/pkg/core"
 	"github.com/vijaynallagatla/vjvector/pkg/embedding"
 	"github.com/vijaynallagatla/vjvector/pkg/index"
 	"github.com/vijaynallagatla/vjvector/pkg/rag"
+	"github.com/vijaynallagatla/vjvector/pkg/utils/logger"
 )
 
 func main() {
@@ -50,19 +52,20 @@ func main() {
 		results, err = runStorageBenchmark(ctx, logger, *iterations)
 	default:
 		logger.Error("Unknown benchmark type", "type", *benchmarkType)
-		os.Exit(1)
+		return
 	}
 
 	if err != nil {
 		logger.Error("Benchmark failed", "error", err)
-		os.Exit(1)
+		defer os.Exit(1)
+		return
 	}
 
 	// Output results
 	if *outputFile != "" {
 		if err := saveResultsToFile(results, *outputFile); err != nil {
 			logger.Error("Failed to save results", "error", err, "file", *outputFile)
-			os.Exit(1)
+			defer os.Exit(1)
 		}
 		logger.Info("Results saved to file", "file", *outputFile)
 	} else {
@@ -122,7 +125,11 @@ func saveResultsToFile(results interface{}, filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Error("Failed to close file", "error", err)
+		}
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
@@ -132,7 +139,11 @@ func saveResultsToFile(results interface{}, filename string) error {
 func printResults(results interface{}) {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	encoder.Encode(results)
+	err := encoder.Encode(results)
+	if err != nil {
+		logger.Error("Failed to encode results", "error", err)
+		return
+	}
 }
 
 // Mock implementations for benchmarking
@@ -189,6 +200,10 @@ func (m *mockEmbeddingService) GetProviderStats() map[embedding.ProviderType]emb
 	}
 }
 
+func (m *mockEmbeddingService) ListProviders() []embedding.Provider {
+	return []embedding.Provider{}
+}
+
 func (m *mockEmbeddingService) HealthCheck(ctx context.Context) map[embedding.ProviderType]error {
 	return map[embedding.ProviderType]error{
 		embedding.ProviderTypeLocal: nil,
@@ -209,7 +224,7 @@ func (m *mockRAGEngine) ProcessQuery(ctx context.Context, query *rag.Query) (*ra
 		Query: query,
 		Results: []*rag.QueryResult{
 			{
-				Vector: &rag.Vector{
+				Vector: &core.Vector{
 					ID:         "mock-vector",
 					Collection: "test",
 					Embedding:  make([]float64, 384),
@@ -252,20 +267,24 @@ func (m *mockRAGEngine) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
-type mockVectorIndex struct{}
-
-func (m *mockVectorIndex) Insert(vector *index.Vector) error {
+func (m *mockRAGEngine) Close() error {
 	return nil
 }
 
-func (m *mockVectorIndex) Search(query []float64, k int) ([]index.VectorSearchResult, error) {
+type mockVectorIndex struct{}
+
+func (m *mockVectorIndex) Insert(vector *core.Vector) error {
+	return nil
+}
+
+func (m *mockVectorIndex) Search(query []float64, k int) ([]core.VectorSearchResult, error) {
 	// Simulate vector search
 	time.Sleep(time.Microsecond * 100) // Simulate search time
 
-	results := make([]index.VectorSearchResult, k)
+	results := make([]core.VectorSearchResult, k)
 	for i := range results {
-		results[i] = index.VectorSearchResult{
-			Vector:   &index.Vector{ID: fmt.Sprintf("mock-%d", i)},
+		results[i] = core.VectorSearchResult{
+			Vector:   &core.Vector{ID: fmt.Sprintf("mock-%d", i)},
 			Distance: float64(i) / 100.0,
 			Score:    1.0 - float64(i)/100.0,
 		}
@@ -273,7 +292,7 @@ func (m *mockVectorIndex) Search(query []float64, k int) ([]index.VectorSearchRe
 	return results, nil
 }
 
-func (m *mockVectorIndex) SearchWithContext(ctx context.Context, query []float64, k int) ([]index.VectorSearchResult, error) {
+func (m *mockVectorIndex) SearchWithContext(ctx context.Context, query []float64, k int) ([]core.VectorSearchResult, error) {
 	return m.Search(query, k)
 }
 

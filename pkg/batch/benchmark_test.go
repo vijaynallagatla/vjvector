@@ -9,14 +9,17 @@ import (
 	"github.com/vijaynallagatla/vjvector/pkg/embedding"
 )
 
-
-
 // BenchmarkBatchEmbeddingGeneration benchmarks batch embedding generation
 func BenchmarkBatchEmbeddingGeneration(b *testing.B) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	mockRAGEngine := &mockRAGEngine{}
+	processor := NewBatchProcessor(config, mockService, mockRAGEngine)
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	sizes := []int{10, 50, 100, 500, 1000}
 
@@ -58,8 +61,13 @@ func BenchmarkBatchEmbeddingGeneration(b *testing.B) {
 func BenchmarkBatchVectorOperations(b *testing.B) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	mockRAGEngine := &mockRAGEngine{}
+	processor := NewBatchProcessor(config, mockService, mockRAGEngine)
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	operations := []BatchOperation{
 		BatchOperationInsert,
@@ -112,8 +120,12 @@ func BenchmarkBatchVectorOperations(b *testing.B) {
 func BenchmarkBatchProcessorOptimalSizes(b *testing.B) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	operations := []BatchOperation{
 		BatchOperationInsert,
@@ -145,8 +157,12 @@ func BenchmarkConcurrentBatchProcessing(b *testing.B) {
 	config.VectorConfig.MaxConcurrentBatch = 20
 
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	concurrencyLevels := []int{1, 2, 4, 8, 16}
 
@@ -181,8 +197,12 @@ func BenchmarkConcurrentBatchProcessing(b *testing.B) {
 func BenchmarkMemoryUsage(b *testing.B) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	// Test with large batches to stress memory usage
 	sizes := []int{1000, 5000, 10000}
@@ -220,8 +240,12 @@ func BenchmarkMemoryUsage(b *testing.B) {
 func BenchmarkBatchSizeOptimization(b *testing.B) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	totalTexts := 1000
 	batchSizes := []int{10, 25, 50, 100, 200, 500}
@@ -264,8 +288,12 @@ func BenchmarkBatchSizeOptimization(b *testing.B) {
 func BenchmarkStatisticsTracking(b *testing.B) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	req := &BatchEmbeddingRequest{
 		Texts:         generateTestTexts(100),
@@ -297,8 +325,12 @@ func BenchmarkStatisticsTracking(b *testing.B) {
 func BenchmarkProgressTracking(b *testing.B) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			b.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	req := &BatchEmbeddingRequest{
 		Texts:         generateTestTexts(500),
@@ -348,8 +380,12 @@ func BenchmarkProgressTracking(b *testing.B) {
 func TestPerformanceTargets(t *testing.T) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			t.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	t.Run("embedding_generation_target", func(t *testing.T) {
 		// Target: <100ms per text chunk for embedding generation

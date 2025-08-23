@@ -9,8 +9,6 @@ import (
 	"github.com/vijaynallagatla/vjvector/pkg/embedding"
 )
 
-
-
 func TestNewBatchProcessor(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -41,7 +39,7 @@ func TestNewBatchProcessor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := &mockEmbeddingService{}
-			processor := NewBatchProcessor(tt.config, mockService)
+			processor := NewBatchProcessor(tt.config, mockService, &mockRAGEngine{})
 
 			if processor == nil {
 				t.Fatal("Expected processor to be created, got nil")
@@ -103,8 +101,12 @@ func TestProcessBatchEmbeddings(t *testing.T) {
 
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			t.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -197,8 +199,12 @@ func TestProcessBatchVectors(t *testing.T) {
 
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			t.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -239,8 +245,12 @@ func TestProcessBatchVectors(t *testing.T) {
 func TestGetOptimalBatchSize(t *testing.T) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			t.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	tests := []struct {
 		name       string
@@ -290,8 +300,12 @@ func TestGetOptimalBatchSize(t *testing.T) {
 func TestGetStatistics(t *testing.T) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			t.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	// Get initial statistics
 	initialStats := processor.GetStatistics()
@@ -330,8 +344,12 @@ func TestGetStatistics(t *testing.T) {
 func TestProgressCallback(t *testing.T) {
 	config := GetDefaultConfig()
 	mockService := &mockEmbeddingService{}
-	processor := NewBatchProcessor(config, mockService)
-	defer processor.Close()
+	processor := NewBatchProcessor(config, mockService, &mockRAGEngine{})
+	defer func() {
+		if err := processor.Close(); err != nil {
+			t.Fatalf("Failed to close processor: %v", err)
+		}
+	}()
 
 	progressCalled := false
 	processor.SetProgressCallback(func(processed, total int, elapsed time.Duration) {
@@ -369,5 +387,3 @@ func TestProgressCallback(t *testing.T) {
 		t.Error("Progress callback should not be called after being removed")
 	}
 }
-
-

@@ -5,13 +5,14 @@ package server
 import (
 	"context"
 	"net/http"
-	"os"
 	"time"
 
 	"log/slog"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/vijaynallagatla/vjvector/pkg/logging"
+	"github.com/vijaynallagatla/vjvector/pkg/metrics"
 )
 
 // Server represents a generic HTTP server with Echo
@@ -19,15 +20,23 @@ type Server struct {
 	echo      *echo.Echo
 	logger    *slog.Logger
 	startTime time.Time
+
+	// Observability components
+	structuredLogger *logging.StructuredLogger
+	metrics          *metrics.PrometheusMetrics
 }
 
 // NewServer creates a new server instance
-func NewServer() *Server {
+func NewServer() (*Server, error) {
 	// Initialize structured logger
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     slog.LevelInfo,
-		AddSource: true,
-	}))
+	logConfig := logging.DefaultConfig()
+	structuredLogger, err := logging.NewStructuredLogger(logConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize Prometheus metrics
+	prometheusMetrics := metrics.NewPrometheusMetrics(structuredLogger.Logger())
 
 	// Create Echo instance
 	e := echo.New()
@@ -43,12 +52,18 @@ func NewServer() *Server {
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Gzip())
 
+	// Add custom middleware for metrics and logging
+	e.Use(middleware.RequestID())
+	e.Use(middleware.Gzip())
+
 	server := &Server{
-		echo:   e,
-		logger: logger,
+		echo:             e,
+		logger:           structuredLogger.Logger(),
+		structuredLogger: structuredLogger,
+		metrics:          prometheusMetrics,
 	}
 
-	return server
+	return server, nil
 }
 
 // Echo returns the underlying Echo instance for route configuration
@@ -66,6 +81,10 @@ func (s *Server) Start(addr string) error {
 	s.startTime = time.Now()
 
 	s.logger.Info("Starting HTTP Server", "address", addr)
+
+	// Start metrics collection
+	ctx := context.Background()
+	go s.metrics.StartMetricsCollection(ctx, 30*time.Second)
 
 	// Start server in a goroutine
 	go func() {
@@ -94,4 +113,36 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // StartTime returns when the server started
 func (s *Server) StartTime() time.Time {
 	return s.startTime
+}
+
+// Metrics returns the Prometheus metrics collector
+func (s *Server) Metrics() *metrics.PrometheusMetrics {
+	return s.metrics
+}
+
+// StructuredLogger returns the structured logger
+func (s *Server) StructuredLogger() *logging.StructuredLogger {
+	return s.structuredLogger
+}
+
+// RecordRequest records metrics for an HTTP request
+func (s *Server) RecordRequest(method, path string, statusCode int, latency time.Duration) {
+	if s.metrics != nil {
+		success := statusCode < 400
+		s.metrics.RecordRequest(latency, success)
+	}
+}
+
+// RecordVectorOperation records metrics for vector operations
+func (s *Server) RecordVectorOperation(operation string, count int) {
+	if s.metrics != nil {
+		s.metrics.RecordVectorOperation(operation, count)
+	}
+}
+
+// RecordRAGQuery records metrics for RAG operations
+func (s *Server) RecordRAGQuery(latency time.Duration, contextHits int) {
+	if s.metrics != nil {
+		s.metrics.RecordRAGQuery(latency, contextHits)
+	}
 }

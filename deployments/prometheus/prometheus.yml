@@ -1,0 +1,128 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # VJVector API Server
+  - job_name: 'vjvector-api'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+    # Add labels for better organization
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__address__]
+        regex: '([^:]+)(?::\d+)?'
+        target_label: host
+      - source_labels: [__job__]
+        target_label: service
+
+  # VJVector Cluster Nodes (if running multiple nodes)
+  - job_name: 'vjvector-nodes'
+    static_configs:
+      - targets: 
+        - 'localhost:8081'
+        - 'localhost:8082'
+        - 'localhost:8083'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__address__]
+        regex: '([^:]+)(?::\d+)?'
+        target_label: host
+      - source_labels: [__job__]
+        target_label: service
+
+  # etcd (if using clustering)
+  - job_name: 'etcd'
+    static_configs:
+      - targets: ['localhost:2379']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__job__]
+        target_label: service
+
+  # Node Exporter (system metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__job__]
+        target_label: service
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Recording rules for common queries
+rule_groups:
+  - name: vjvector
+    rules:
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: rate(vjvector_request_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second"
+
+      # High latency alert
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(vjvector_request_latency_seconds_bucket[5m])) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "95th percentile latency is {{ $value }} seconds"
+
+      # Low memory alert
+      - alert: LowMemory
+        expr: vjvector_node_memory_usage_percent > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low memory available"
+          description: "Memory usage is {{ $value }}%"
+
+      # Low disk space alert
+      - alert: LowDiskSpace
+        expr: vjvector_node_disk_usage_percent > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space available"
+          description: "Disk usage is {{ $value }}%"

@@ -37,9 +37,9 @@ type processorStatistics struct {
 	averageLatency      time.Duration
 	successRate         float64
 	cacheHitRate        float64
-	memoryUsage         int64
-	activeBatches       int
-	mu                  sync.Mutex
+	// memoryUsage         int64
+	activeBatches int
+	mu            sync.Mutex
 }
 
 // NewBatchProcessor creates a new batch processor

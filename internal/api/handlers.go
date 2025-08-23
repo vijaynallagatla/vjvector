@@ -17,6 +17,7 @@ import (
 	"github.com/vijaynallagatla/vjvector/pkg/core"
 	"github.com/vijaynallagatla/vjvector/pkg/embedding"
 	"github.com/vijaynallagatla/vjvector/pkg/index"
+	"github.com/vijaynallagatla/vjvector/pkg/metrics"
 	"github.com/vijaynallagatla/vjvector/pkg/rag"
 	"github.com/vijaynallagatla/vjvector/pkg/storage"
 	"github.com/vijaynallagatla/vjvector/pkg/utils/logger"
@@ -424,6 +425,12 @@ type Handlers struct {
 	storage        storage.StorageEngine
 	batchProcessor batch.BatchProcessor
 	ragEngine      rag.Engine
+	server         ServerInterface // Interface for accessing server metrics
+}
+
+// ServerInterface defines methods for accessing server functionality
+type ServerInterface interface {
+	Metrics() *metrics.PrometheusMetrics
 }
 
 // NewHandlers creates new API handlers
@@ -659,6 +666,11 @@ func NewHandlers() *Handlers {
 	handlers.indexes["rag_index"] = vectorIndex
 
 	return handlers
+}
+
+// SetServer sets the server interface for accessing metrics
+func (h *Handlers) SetServer(server ServerInterface) {
+	h.server = server
 }
 
 // RegisterRoutes registers all API routes with the Echo instance
@@ -955,16 +967,39 @@ func (h *Handlers) compactStorage(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// getMetrics returns performance metrics
+// getMetrics returns Prometheus metrics
 func (h *Handlers) getMetrics(c echo.Context) error {
-	metrics := map[string]interface{}{
-		"indexes_count": len(h.indexes),
-		"uptime":        "N/A", // Will be set by server package
-		"memory_usage":  "N/A", // TODO: Implement actual memory monitoring
-		"requests":      "N/A", // TODO: Implement request counting
+	// Get metrics from the server if available
+	if h.server != nil && h.server.Metrics() != nil {
+		metrics, err := h.server.Metrics().GetMetrics()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Failed to retrieve metrics",
+			})
+		}
+
+		// Set content type for Prometheus
+		c.Response().Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+		return c.String(http.StatusOK, string(metrics))
 	}
 
-	return c.JSON(http.StatusOK, metrics)
+	// Fallback to basic metrics
+	basicMetrics := `# VJVector Basic Metrics
+# HELP vjvector_info Information about VJVector
+# TYPE vjvector_info gauge
+vjvector_info{version="1.0.0",service="vjvector"} 1
+
+# HELP vjvector_uptime_seconds Uptime in seconds
+# TYPE vjvector_uptime_seconds counter
+vjvector_uptime_seconds{service="vjvector"} 0
+
+# HELP vjvector_requests_total Total number of requests
+# TYPE vjvector_requests_total counter
+vjvector_requests_total{service="vjvector"} 0
+`
+
+	c.Response().Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	return c.String(http.StatusOK, basicMetrics)
 }
 
 // serveOpenAPI serves the OpenAPI specification

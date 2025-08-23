@@ -7,6 +7,7 @@ import (
 
 	"github.com/vijaynallagatla/vjvector/pkg/core"
 	"github.com/vijaynallagatla/vjvector/pkg/embedding"
+	"github.com/vijaynallagatla/vjvector/pkg/rag"
 )
 
 // mockEmbeddingService provides a mock implementation of the embedding service
@@ -48,7 +49,7 @@ func (m *mockEmbeddingService) GetProvider(providerType embedding.ProviderType) 
 }
 
 func (m *mockEmbeddingService) ListProviders() []embedding.Provider {
-	return nil
+	return []embedding.Provider{}
 }
 
 func (m *mockEmbeddingService) GetProviderStats() map[embedding.ProviderType]embedding.ProviderStats {
@@ -60,6 +61,37 @@ func (m *mockEmbeddingService) HealthCheck(ctx context.Context) map[embedding.Pr
 }
 
 func (m *mockEmbeddingService) Close() error {
+	return nil
+}
+
+// mockRAGEngine provides a mock implementation of the RAG engine
+type mockRAGEngine struct{}
+
+func (m *mockRAGEngine) ProcessQuery(ctx context.Context, query *rag.Query) (*rag.QueryResponse, error) {
+	return &rag.QueryResponse{}, nil
+}
+
+func (m *mockRAGEngine) ProcessBatch(ctx context.Context, queries []*rag.Query) ([]*rag.QueryResponse, error) {
+	return []*rag.QueryResponse{}, nil
+}
+
+func (m *mockRAGEngine) ExpandQuery(ctx context.Context, query *rag.Query) ([]string, error) {
+	return []string{}, nil
+}
+
+func (m *mockRAGEngine) RerankResults(ctx context.Context, results []*rag.QueryResult, query *rag.Query) ([]*rag.QueryResult, error) {
+	return results, nil
+}
+
+func (m *mockRAGEngine) GetQueryStats() rag.QueryStats {
+	return rag.QueryStats{}
+}
+
+func (m *mockRAGEngine) HealthCheck(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockRAGEngine) Close() error {
 	return nil
 }
 

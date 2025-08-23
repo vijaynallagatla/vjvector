@@ -258,6 +258,7 @@ func (e *SemanticExpander) Expand(ctx context.Context, query *Query) ([]string, 
 		if err != nil {
 			// Continue with pattern-based variations even if embedding fails
 		} else if len(embeddingResp.Embeddings) > 0 {
+			return semanticTerms, nil
 			// Could enhance semantic terms with embedding-based analysis here
 			// For now, just return pattern-based variations
 		}

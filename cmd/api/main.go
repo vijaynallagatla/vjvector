@@ -21,7 +21,11 @@ func main() {
 	addr := ":" + port
 
 	// Create server instance
-	srv := server.NewServer()
+	srv, err := server.NewServer()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create server: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Create API handlers
 	handlers := api.NewHandlers()

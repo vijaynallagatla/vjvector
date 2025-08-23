@@ -31,7 +31,6 @@ type vectorStatistics struct {
 	totalProcessingTime time.Duration
 	totalOperations     map[BatchOperation]int64
 	errors              int64
-	mu                  sync.Mutex
 }
 
 // NewBatchVectorProcessor creates a new batch vector processor
@@ -213,11 +212,11 @@ func (vp *vectorProcessor) processInsertBatch(ctx context.Context, req *BatchVec
 	for i := 0; i < numBatches; i++ {
 		startIdx := i * batchSize
 		endIdx := min(startIdx+batchSize, len(req.Vectors))
-		
+
 		wg.Add(1)
 		go func(batchIdx, start, end int) {
 			defer wg.Done()
-			
+
 			for j := start; j < end; j++ {
 				// Simulate vector insertion (in real implementation, this would interact with storage)
 				vector := req.Vectors[j]
@@ -231,7 +230,7 @@ func (vp *vectorProcessor) processInsertBatch(ctx context.Context, req *BatchVec
 					errorsMu.Unlock()
 					continue
 				}
-				
+
 				// Validate vector
 				if len(vector.Embedding) == 0 {
 					errorsMu.Lock()
@@ -243,7 +242,7 @@ func (vp *vectorProcessor) processInsertBatch(ctx context.Context, req *BatchVec
 					errorsMu.Unlock()
 					continue
 				}
-				
+
 				results[j] = vector.ID
 			}
 		}(i, startIdx, endIdx)
@@ -268,7 +267,7 @@ func (vp *vectorProcessor) processUpdateBatch(ctx context.Context, req *BatchVec
 			})
 			continue
 		}
-		
+
 		// Simulate update operation
 		results[i] = true
 	}
@@ -291,7 +290,7 @@ func (vp *vectorProcessor) processDeleteBatch(ctx context.Context, req *BatchVec
 			})
 			continue
 		}
-		
+
 		// Simulate delete operation
 		results[i] = true
 	}
@@ -320,7 +319,7 @@ func (vp *vectorProcessor) processSearchBatch(ctx context.Context, req *BatchVec
 	}
 
 	searchResults := vp.batchProcessor.ProcessSearchBatch(req.QueryVector, embeddings, k)
-	
+
 	// Convert to our result format
 	results := make([]core.VectorSearchResult, len(searchResults))
 	for i, result := range searchResults {
@@ -365,7 +364,7 @@ func (vp *vectorProcessor) processSimilarityBatch(ctx context.Context, req *Batc
 	}
 
 	similarities := vp.workerPool.ParallelCosineSimilarity(queryVectors, embeddings)
-	
+
 	return similarities, errors, nil
 }
 
@@ -389,7 +388,7 @@ func (vp *vectorProcessor) processNormalizeBatch(ctx context.Context, req *Batch
 
 	// Normalize in parallel
 	normalizedEmbeddings := vp.batchProcessor.ProcessNormalizeBatch(embeddings)
-	
+
 	// Update original vectors
 	results := make([]*core.Vector, len(req.Vectors))
 	for i, vector := range req.Vectors {
@@ -436,7 +435,7 @@ func (vp *vectorProcessor) processDistanceBatch(ctx context.Context, req *BatchV
 	}
 
 	distances := vp.workerPool.ParallelEuclideanDistance(queryVectors, embeddings)
-	
+
 	return distances, errors, nil
 }
 
@@ -570,15 +569,12 @@ func (vp *vectorProcessor) getDefaultEstimate(operation BatchOperation, numVecto
 	// Scale by number of vectors with parallelization factor
 	parallelizationFactor := float64(vp.config.WorkerCount)
 	estimatedTime := time.Duration(float64(numVectors) * float64(base) / parallelizationFactor)
-	
+
 	return estimatedTime
 }
 
 // updateStatistics updates global statistics after batch processing
 func (vp *vectorProcessor) updateStatistics(operation BatchOperation, response *BatchVectorResponse) {
-	vp.statistics.mu.Lock()
-	defer vp.statistics.mu.Unlock()
-
 	vp.statistics.totalBatches++
 	vp.statistics.totalVectors += int64(response.Statistics.TotalItems)
 	vp.statistics.totalProcessingTime += response.ProcessingTime
@@ -588,9 +584,6 @@ func (vp *vectorProcessor) updateStatistics(operation BatchOperation, response *
 
 // GetStatistics returns current vector processor statistics
 func (vp *vectorProcessor) GetStatistics() vectorStatistics {
-	vp.statistics.mu.Lock()
-	defer vp.statistics.mu.Unlock()
-	
 	// Return a copy to avoid lock copying
 	stats := vectorStatistics{
 		totalBatches:        vp.statistics.totalBatches,

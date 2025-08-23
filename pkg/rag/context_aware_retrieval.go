@@ -3,7 +3,6 @@ package rag
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"log/slog"
@@ -16,7 +15,7 @@ type ContextAwareRetrievalManager struct {
 	strategies []ContextRetrievalStrategy
 	config     *ContextRetrievalConfig
 	logger     *slog.Logger
-	mu         sync.RWMutex
+	// mu         sync.RWMutex
 }
 
 // ContextRetrievalConfig configures context-aware retrieval behavior
