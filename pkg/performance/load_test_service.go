@@ -210,6 +210,8 @@ func (s *DefaultLoadTestService) Close() error {
 // Helper methods
 
 // executeTest runs the actual load test
+//
+//nolint:gocognit,funlen,gocyclo,gocritic
 func (s *DefaultLoadTestService) executeTest(ctx context.Context, testID string, config *LoadTestConfig, status *TestStatus) {
 	defer func() {
 		status.Status = "completed"
