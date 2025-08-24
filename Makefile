@@ -24,7 +24,7 @@ help:
 build:
 	@echo "Building vjvector..."
 	@mkdir -p bin
-	go build -o bin/vjvector ./cmd/vjvector
+	go build -o bin/vjvector ./cmd/api
 	@echo "Build complete: bin/vjvector"
 
 # Run tests
