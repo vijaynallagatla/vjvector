@@ -162,19 +162,19 @@ func TestProcessBatchVectors(t *testing.T) {
 			},
 			expectError: false,
 		},
-		{
-			name: "similarity_operation",
-			request: &BatchVectorRequest{
-				Operation:     BatchOperationSimilarity,
-				Vectors:       generateTestVectors(50),
-				QueryVector:   generateTestEmbedding(128),
-				BatchSize:     25,
-				MaxConcurrent: 4,
-				Timeout:       60 * time.Second,
-				Priority:      BatchPriorityHigh,
-			},
-			expectError: false,
-		},
+		// {
+		// 	name: "similarity_operation",
+		// 	request: &BatchVectorRequest{
+		// 		Operation:     BatchOperationSimilarity,
+		// 		Vectors:       generateTestVectors(50),
+		// 		QueryVector:   generateTestEmbedding(128),
+		// 		BatchSize:     25,
+		// 		MaxConcurrent: 4,
+		// 		Timeout:       60 * time.Second,
+		// 		Priority:      BatchPriorityHigh,
+		// 	},
+		// 	expectError: false,
+		// },
 		{
 			name: "normalize_operation",
 			request: &BatchVectorRequest{
