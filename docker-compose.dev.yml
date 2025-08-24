@@ -1,0 +1,227 @@
+version: '3.8'
+
+services:
+  # Development etcd (single node for simplicity)
+  etcd-dev:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: vjvector-etcd-dev
+    environment:
+      - ETCD_NAME=etcd-dev
+      - ETCD_INITIAL_CLUSTER=etcd-dev=http://etcd-dev:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_INITIAL_CLUSTER_TOKEN=vjvector-dev
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_PEER_URLS=http://etcd-dev:2380
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd-dev:2379
+      - ETCD_DATA_DIR=/etcd-data
+    volumes:
+      - etcd-dev-data:/etcd-data
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    networks:
+      - vjvector-dev-network
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # VJVector Master Node (Development)
+  vjvector-master-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: vjvector-master-dev
+    environment:
+      - NODE_ROLE=master
+      - NODE_ID=master-dev-001
+      - ADDRESS=0.0.0.0
+      - PORT=8080
+      - ETCD_ENDPOINTS=etcd-dev:2379
+      - SHARD_COUNT=4
+      - REPLICA_COUNT=2
+      - HEARTBEAT_INTERVAL=10s
+      - ELECTION_TIMEOUT=20s
+      - MAX_CONCURRENT_REQUESTS=500
+      - REQUEST_TIMEOUT=60s
+      - HEALTH_CHECK_INTERVAL=60s
+      - ENABLE_AUTH=false
+      - LOG_LEVEL=debug
+      - DATA_DIR=/app/data
+      - CONFIG_FILE=/app/config.cluster.yaml
+      - GO_ENV=development
+      - ENABLE_DEBUG=true
+    volumes:
+      - vjvector-master-dev-data:/app/data
+      - ./config.cluster.yaml:/app/config.cluster.yaml:ro
+      - .:/app/src:ro  # Mount source code for hot reloading
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "2345:2345"  # Delve debugger port
+    networks:
+      - vjvector-dev-network
+    depends_on:
+      etcd-dev:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    command: ["go", "run", "./cmd/api", "serve", "--config", "/app/config.cluster.yaml"]
+
+  # VJVector Slave Node (Development)
+  vjvector-slave-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: vjvector-slave-dev
+    environment:
+      - NODE_ROLE=slave
+      - NODE_ID=slave-dev-001
+      - ADDRESS=0.0.0.0
+      - PORT=8080
+      - ETCD_ENDPOINTS=etcd-dev:2379
+      - SHARD_COUNT=4
+      - REPLICA_COUNT=2
+      - HEARTBEAT_INTERVAL=10s
+      - ELECTION_TIMEOUT=20s
+      - MAX_CONCURRENT_REQUESTS=500
+      - REQUEST_TIMEOUT=60s
+      - HEALTH_CHECK_INTERVAL=60s
+      - ENABLE_AUTH=false
+      - LOG_LEVEL=debug
+      - DATA_DIR=/app/data
+      - CONFIG_FILE=/app/config.cluster.yaml
+      - GO_ENV=development
+      - ENABLE_DEBUG=true
+    volumes:
+      - vjvector-slave-dev-data:/app/data
+      - ./config.cluster.yaml:/app/config.cluster.yaml:ro
+      - .:/app/src:ro  # Mount source code for hot reloading
+    ports:
+      - "8082:8080"
+      - "8083:8081"
+      - "2346:2345"  # Delve debugger port
+    networks:
+      - vjvector-dev-network
+    depends_on:
+      etcd-dev:
+        condition: service_healthy
+      vjvector-master-dev:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    command: ["go", "run", "./cmd/api", "serve", "--config", "/app/config.cluster.yaml"]
+
+  # Prometheus for development metrics
+  prometheus-dev:
+    image: prom/prometheus:v2.45.0
+    container_name: vjvector-prometheus-dev
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployments/prometheus/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-dev-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.dev.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=24h'
+      - '--web.enable-lifecycle'
+    networks:
+      - vjvector-dev-network
+    depends_on:
+      - vjvector-master-dev
+      - vjvector-slave-dev
+    restart: unless-stopped
+
+  # Grafana for development visualization
+  grafana-dev:
+    image: grafana/grafana:10.0.3
+    container_name: vjvector-grafana-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANONYMOUS_ENABLED=true
+      - GF_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - grafana-dev-data:/var/lib/grafana
+      - ./deployments/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deployments/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - vjvector-dev-network
+    depends_on:
+      - prometheus-dev
+    restart: unless-stopped
+
+  # Redis for development caching
+  redis-dev:
+    image: redis:7.2-alpine
+    container_name: vjvector-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-dev-data:/data
+    networks:
+      - vjvector-dev-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+
+  # Jaeger for distributed tracing (development)
+  jaeger:
+    image: jaegertracing/all-in-one:1.48
+    container_name: vjvector-jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    networks:
+      - vjvector-dev-network
+    restart: unless-stopped
+
+  # Development load balancer (simple nginx)
+  nginx-dev:
+    image: nginx:alpine
+    container_name: vjvector-nginx-dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/local/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - vjvector-dev-network
+    depends_on:
+      - vjvector-master-dev
+      - vjvector-slave-dev
+    restart: unless-stopped
+
+volumes:
+  etcd-dev-data:
+  vjvector-master-dev-data:
+  vjvector-slave-dev-data:
+  prometheus-dev-data:
+  grafana-dev-data:
+  redis-dev-data:
+
+networks:
+  vjvector-dev-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

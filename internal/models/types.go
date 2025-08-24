@@ -6,7 +6,7 @@ import "time"
 type Vector struct {
 	ID         string                 `json:"id"`
 	Collection string                 `json:"collection,omitempty"`
-	Embedding  []float64              `json:"embedding"`
+	Embedding  []float64              `json:"embedding,omitempty"`
 	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }
 

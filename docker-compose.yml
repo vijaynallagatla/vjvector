@@ -1,0 +1,313 @@
+version: '3.8'
+
+services:
+  # etcd cluster for coordination
+  etcd-0:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: vjvector-etcd-0
+    environment:
+      - ETCD_NAME=etcd-0
+      - ETCD_INITIAL_CLUSTER=etcd-0=http://etcd-0:2380,etcd-1=http://etcd-1:2380,etcd-2=http://etcd-2:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_INITIAL_CLUSTER_TOKEN=vjvector-cluster
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_PEER_URLS=http://etcd-0:2380
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd-0:2379
+      - ETCD_DATA_DIR=/etcd-data
+    volumes:
+      - etcd-0-data:/etcd-data
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    networks:
+      - vjvector-network
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  etcd-1:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: vjvector-etcd-1
+    environment:
+      - ETCD_NAME=etcd-1
+      - ETCD_INITIAL_CLUSTER=etcd-0=http://etcd-0:2380,etcd-1=http://etcd-1:2380,etcd-2=http://etcd-2:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_INITIAL_CLUSTER_TOKEN=vjvector-cluster
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_PEER_URLS=http://etcd-1:2380
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd-1:2379
+      - ETCD_DATA_DIR=/etcd-data
+    volumes:
+      - etcd-1-data:/etcd-data
+    networks:
+      - vjvector-network
+    depends_on:
+      - etcd-0
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  etcd-2:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: vjvector-etcd-2
+    environment:
+      - ETCD_NAME=etcd-2
+      - ETCD_INITIAL_CLUSTER=etcd-0=http://etcd-0:2380,etcd-1=http://etcd-1:2380,etcd-2=http://etcd-2:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_INITIAL_CLUSTER_TOKEN=vjvector-cluster
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_PEER_URLS=http://etcd-2:2380
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd-2:2379
+      - ETCD_DATA_DIR=/etcd-data
+    volumes:
+      - etcd-2-data:/etcd-data
+    networks:
+      - vjvector-network
+    depends_on:
+      - etcd-0
+      - etcd-1
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # VJVector Master Node
+  vjvector-master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vjvector-master
+    environment:
+      - NODE_ROLE=master
+      - NODE_ID=master-001
+      - ADDRESS=0.0.0.0
+      - PORT=8080
+      - ETCD_ENDPOINTS=etcd-0:2379,etcd-1:2379,etcd-2:2379
+      - SHARD_COUNT=8
+      - REPLICA_COUNT=3
+      - HEARTBEAT_INTERVAL=5s
+      - ELECTION_TIMEOUT=10s
+      - MAX_CONCURRENT_REQUESTS=1000
+      - REQUEST_TIMEOUT=30s
+      - HEALTH_CHECK_INTERVAL=30s
+      - ENABLE_AUTH=false
+      - LOG_LEVEL=info
+      - DATA_DIR=/app/data
+      - CONFIG_FILE=/app/config.yaml
+    volumes:
+      - vjvector-master-data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    networks:
+      - vjvector-network
+    depends_on:
+      etcd-0:
+        condition: service_healthy
+      etcd-1:
+        condition: service_healthy
+      etcd-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # VJVector Slave Node 1
+  vjvector-slave-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vjvector-slave-1
+    environment:
+      - NODE_ROLE=slave
+      - NODE_ID=slave-001
+      - ADDRESS=0.0.0.0
+      - PORT=8080
+      - ETCD_ENDPOINTS=etcd-0:2379,etcd-1:2379,etcd-2:2379
+      - SHARD_COUNT=8
+      - REPLICA_COUNT=3
+      - HEARTBEAT_INTERVAL=5s
+      - ELECTION_TIMEOUT=10s
+      - MAX_CONCURRENT_REQUESTS=1000
+      - REQUEST_TIMEOUT=30s
+      - HEALTH_CHECK_INTERVAL=30s
+      - ENABLE_AUTH=false
+      - LOG_LEVEL=info
+      - DATA_DIR=/app/data
+      - CONFIG_FILE=/app/config.yaml
+    volumes:
+      - vjvector-slave-1-data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+    ports:
+      - "8082:8080"
+      - "8083:8081"
+    networks:
+      - vjvector-network
+    depends_on:
+      etcd-0:
+        condition: service_healthy
+      etcd-1:
+        condition: service_healthy
+      etcd-2:
+        condition: service_healthy
+      vjvector-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # VJVector Slave Node 2
+  vjvector-slave-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vjvector-slave-2
+    environment:
+      - NODE_ROLE=slave
+      - NODE_ID=slave-002
+      - ADDRESS=0.0.0.0
+      - PORT=8080
+      - ETCD_ENDPOINTS=etcd-0:2379,etcd-1:2379,etcd-2:2379
+      - SHARD_COUNT=8
+      - REPLICA_COUNT=3
+      - HEARTBEAT_INTERVAL=5s
+      - ELECTION_TIMEOUT=10s
+      - MAX_CONCURRENT_REQUESTS=1000
+      - REQUEST_TIMEOUT=30s
+      - HEALTH_CHECK_INTERVAL=30s
+      - ENABLE_AUTH=false
+      - LOG_LEVEL=info
+      - DATA_DIR=/app/data
+      - CONFIG_FILE=/app/config.yaml
+    volumes:
+      - vjvector-slave-2-data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+    ports:
+      - "8084:8080"
+      - "8085:8081"
+    networks:
+      - vjvector-network
+    depends_on:
+      etcd-0:
+        condition: service_healthy
+      etcd-1:
+        condition: service_healthy
+      etcd-2:
+        condition: service_healthy
+      vjvector-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: vjvector-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - vjvector-network
+    depends_on:
+      - vjvector-master
+      - vjvector-slave-1
+      - vjvector-slave-2
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: vjvector-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./deployments/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deployments/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - vjvector-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7.2-alpine
+    container_name: vjvector-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - vjvector-network
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  # Load balancer (HAProxy)
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: vjvector-haproxy
+    ports:
+      - "80:80"
+      - "8404:8404"
+    volumes:
+      - ./deploy/local/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - vjvector-network
+    depends_on:
+      - vjvector-master
+      - vjvector-slave-1
+      - vjvector-slave-2
+    restart: unless-stopped
+
+volumes:
+  etcd-0-data:
+  etcd-1-data:
+  etcd-2-data:
+  vjvector-master-data:
+  vjvector-slave-1-data:
+  vjvector-slave-2-data:
+  prometheus-data:
+  grafana-data:
+  redis-data:
+
+networks:
+  vjvector-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

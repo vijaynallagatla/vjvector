@@ -1,0 +1,40 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'vjvector-master'
+    static_configs:
+      - targets: ['vjvector-master-dev:8081']
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  - job_name: 'vjvector-slave'
+    static_configs:
+      - targets: ['vjvector-slave-dev:8081']
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  - job_name: 'etcd'
+    static_configs:
+      - targets: ['etcd-dev:2379']
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-dev:6379']
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s

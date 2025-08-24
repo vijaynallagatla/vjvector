@@ -1,0 +1,97 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  metrics_port: 8081
+
+cluster:
+  enabled: true
+  node_role: "${NODE_ROLE:slave}"
+  node_id: "${NODE_ID:node-001}"
+  etcd_endpoints: "${ETCD_ENDPOINTS:localhost:2379}"
+  shard_count: 8
+  replica_count: 3
+  heartbeat_interval: "5s"
+  election_timeout: "10s"
+  max_concurrent_requests: 1000
+  request_timeout: "30s"
+  health_check_interval: "30s"
+
+database:
+  data_dir: "${DATA_DIR:./data}"
+  max_vectors: 1000000
+  index_type: "hnsw"
+  storage_type: "leveldb"
+  enable_compression: true
+  max_file_size: "1GB"
+  cache_size: "256MB"
+
+embedding:
+  model_name: "text-embedding-ada-002"
+  dimension: 1536
+  batch_size: 100
+  enable_cache: true
+  cache_ttl: "5m"
+  max_concurrent_requests: 100
+
+rag:
+  enabled: true
+  enable_query_expansion: true
+  enable_result_reranking: true
+  enable_context_awareness: true
+  max_query_length: 1000
+  max_expansion_terms: 5
+  max_concurrent_queries: 10
+  query_timeout: "30s"
+  batch_size: 100
+  enable_cache: true
+  cache_ttl: "5m"
+  max_cache_size: 1000
+
+batch_processing:
+  enabled: true
+  max_batch_size: 1000
+  max_concurrent_batches: 10
+  batch_timeout: "60s"
+  enable_retry: true
+  max_retries: 3
+  retry_delay: "1s"
+
+monitoring:
+  enabled: true
+  prometheus_endpoint: "/metrics"
+  health_check_endpoint: "/health"
+  readiness_endpoint: "/ready"
+  enable_profiling: true
+  profiling_endpoint: "/debug/pprof"
+  metrics_collection_interval: "15s"
+
+logging:
+  level: "${LOG_LEVEL:info}"
+  format: "json"
+  output: "stdout"
+  enable_structured_logging: true
+  enable_request_logging: true
+  log_rotation:
+    enabled: true
+    max_size: "100MB"
+    max_age: "7d"
+    max_backups: 5
+
+security:
+  enable_auth: false
+  enable_ssl: false
+  cors_enabled: true
+  allowed_origins: ["*"]
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 1000
+    burst_size: 100
+
+performance:
+  enable_gc_tuning: true
+  gc_percent: 100
+  max_procs: 0
+  enable_memory_profiling: true
+  memory_limit: "4GB"
+  connection_pool_size: 100
+  worker_pool_size: 10

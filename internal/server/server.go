@@ -52,10 +52,6 @@ func NewServer() (*Server, error) {
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Gzip())
 
-	// Add custom middleware for metrics and logging
-	e.Use(middleware.RequestID())
-	e.Use(middleware.Gzip())
-
 	server := &Server{
 		echo:             e,
 		logger:           structuredLogger.Logger(),
