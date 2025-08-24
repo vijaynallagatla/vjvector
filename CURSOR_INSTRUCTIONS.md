@@ -69,6 +69,20 @@ vjvector/
 - **Profiling**: Include benchmarks for critical paths
 - **Metrics**: Add Prometheus metrics for monitoring
 
+### 4. Documentation and API Spec Maintenance
+- **OpenAPI Spec Updates**: Whenever changes are made to existing API endpoints, models, or response structures, immediately update the OpenAPI specification in `docs/api/openapi.yaml`
+- **Regression Documentation**: If a regression is committed that affects existing features, document the changes in relevant documentation files and update any affected API examples
+- **Version Compatibility**: Maintain backward compatibility documentation when possible, or clearly document breaking changes
+- **API Examples**: Keep examples in `examples/` directory synchronized with current API behavior
+- **Change Tracking**: Update relevant sections in `docs/` when features are modified, deprecated, or removed
+- **Integration Tests**: Ensure that any API changes are reflected in integration tests and that they pass before merging
+
+**Critical**: Before committing any changes that modify existing functionality, verify that:
+1. OpenAPI specs are updated to reflect the new behavior
+2. Relevant documentation is updated to explain the changes
+3. Examples and integration tests are updated and passing
+4. Breaking changes are clearly documented with migration guides if applicable
+
 ## 🧠 AI-Specific Implementation Guidelines
 
 ### 1. Vector Operations
@@ -212,6 +226,17 @@ Use table-driven tests and proper mocking."
 "Optimize this [operation] for high-performance vector operations. 
 Consider memory usage, CPU efficiency, and concurrent access patterns. 
 Include benchmarks to measure improvements."
+```
+
+### When Handling Regressions or API Changes
+```
+"This change affects existing functionality. Please ensure:
+1. Update the OpenAPI specification in docs/api/openapi.yaml to reflect the new behavior
+2. Update relevant documentation files to explain the changes
+3. Modify examples in the examples/ directory if they're affected
+4. Update integration tests to match the new API behavior
+5. Document any breaking changes with clear migration guidance
+6. Verify that all tests pass before proceeding"
 ```
 
 ## 🎯 Success Metrics

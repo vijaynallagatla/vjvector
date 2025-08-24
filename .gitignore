@@ -129,3 +129,5 @@ data/
 config.local.yaml
 
 vjvector
+cli
+api
