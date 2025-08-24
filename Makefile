@@ -13,7 +13,8 @@ help:
 	@echo "  clean         - Clean build artifacts"
 	@echo "  lint          - Run linter"
 	@echo "  format        - Format code"
-	@echo "  coverage      - Run tests with coverage"
+	@echo "  coverage      - Run tests with coverage
+	@echo "  test-docs     - Test API documentation endpoints"
 	@echo "  docker-build  - Build Docker image"
 	@echo "  docker-run    - Run Docker container"
 	@echo "  install-tools - Install development tools"
@@ -417,11 +418,21 @@ cluster-test:
 	@if [ -f "docker-compose.yml" ]; then \
 		echo "Testing production cluster:"; \
 		curl -s -o /dev/null -w "Master: %{http_code}\n" http://localhost:8080/health || echo "Master: FAILED"; \
-		curl -s -o /dev/null -w "Slave 1: %{http_code}\n" http://localhost:8082/health || echo "Slave 1: FAILED"; \
-		curl -s -o /dev/null -w "Slave 2: %{http_code}\n" http://localhost:8084/health || echo "Slave 2: FAILED"; \
+		curl -s -o /dev/null -w "Slave 1: %{http_code}\n" http://localhost:8080/health || echo "Slave 1: FAILED"; \
+		curl -s -o /dev/null -w "Slave 2: %{http_code}\n" http://localhost:8080/health || echo "Slave 2: FAILED"; \
 		curl -s -o /dev/null -w "Load Balancer: %{http_code}\n" http://localhost/health || echo "Load Balancer: FAILED"; \
 	else \
 		echo "No production cluster found"; \
+	fi
+
+# Test API documentation endpoints
+test-docs:
+	@echo "Testing API documentation endpoints..."
+	@if [ -f "scripts/test-docs.sh" ]; then \
+		./scripts/test-docs.sh; \
+	else \
+		echo "Error: test-docs.sh script not found"; \
+		exit 1; \
 	fi
 
 # Show cluster resource usage
